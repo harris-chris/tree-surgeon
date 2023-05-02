@@ -24,7 +24,7 @@ import qualified Lexer as L
 %%
 
 child :: { IsChildOf }
-  : isChildOf string { IsChildOf "farts" }
+  : isChildOf string { unTok $2 (\_ (L.String str) -> IsChildOf str) }
 
 {
 
@@ -49,7 +49,7 @@ parseError _ = do
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
 
 data IsChildOf =
-    IsChildOf String
+    IsChildOf ByteString
     deriving (Eq, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a

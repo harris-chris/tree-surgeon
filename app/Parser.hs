@@ -88,11 +88,12 @@ action_3 _ = happyFail (happyExpListPerState 3)
 action_4 _ = happyReduce_1
 
 happyReduce_1 = happySpecReduce_2  4 happyReduction_1
-happyReduction_1 _
+happyReduction_1 (HappyTerminal happy_var_2)
 	_
 	 =  HappyAbsSyn4
-		 (IsChildOf "farts"
+		 (unTok happy_var_2 (\_ (L.String str) -> IsChildOf str)
 	)
+happyReduction_1 _ _  = notHappyAtAll 
 
 happyNewToken action sts stk
 	= lexer(\tk -> 
@@ -145,7 +146,7 @@ parseError _ = do
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
 
 data IsChildOf =
-    IsChildOf String
+    IsChildOf ByteString
     deriving (Eq, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a
