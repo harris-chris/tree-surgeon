@@ -71,6 +71,9 @@ executable tree-surgeon
                       , array ^>=0.5.4.0
                       , bytestring ^>=0.11.4.0
 
+    build-tool-depends:      alex:alex
+                             , happy:happy
+
     -- Directories containing source files.
     hs-source-dirs:   app
 
