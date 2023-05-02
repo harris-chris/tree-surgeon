@@ -10,7 +10,7 @@ import Data.Monoid (First (..))
 import qualified Lexer as L
 }
 
-%name parseTreeSurgeon child
+%name parseTreeSurgeon exp
 %tokentype { L.RangedToken }
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
@@ -23,7 +23,10 @@ import qualified Lexer as L
 
 %%
 
-child :: { IsChildOf }
+or :: { Exp L.Range }
+  : exp '|' exp { Or (info $1 <-> info $3) $1 $3 }
+
+exp :: { Exp L.Range }
   : isChildOf string { unTok $2 (\_ (L.String str) -> IsChildOf str) }
 
 {
@@ -48,9 +51,10 @@ parseError _ = do
   (L.AlexPn _ line column, _, _, _) <- L.alexGetInput
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
 
-data IsChildOf =
+data Exp a =
     IsChildOf ByteString
-    deriving (Eq, Show)
+    | Or a (Exp a) (Exp a)
+    deriving (Foldable, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)
