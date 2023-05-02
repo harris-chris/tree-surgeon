@@ -15,19 +15,54 @@ import Control.Monad (ap)
 
 -- parser produced by Happy Version 1.20.1.1
 
-data HappyAbsSyn t4
+data HappyAbsSyn 
 	= HappyTerminal (L.RangedToken)
 	| HappyErrorToken Prelude.Int
-	| HappyAbsSyn4 t4
+	| HappyAbsSyn4 (IsChildOf)
+
+{- to allow type-synonyms as our monads (likely
+ - with explicitly-specified bind and return)
+ - in Haskell98, it seems that with
+ - /type M a = .../, then /(HappyReduction M)/
+ - is not allowed.  But Happy is a
+ - code-generator that can just substitute it.
+type HappyReduction m = 
+	   Prelude.Int 
+	-> (L.RangedToken)
+	-> HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> m HappyAbsSyn)
+	-> [HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> m HappyAbsSyn)] 
+	-> HappyStk HappyAbsSyn 
+	-> m HappyAbsSyn
+-}
+
+action_0,
+ action_1,
+ action_2,
+ action_3,
+ action_4 :: () => Prelude.Int -> ({-HappyReduction (L.Alex) = -}
+	   Prelude.Int 
+	-> (L.RangedToken)
+	-> HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)
+	-> [HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)] 
+	-> HappyStk HappyAbsSyn 
+	-> (L.Alex) HappyAbsSyn)
+
+happyReduce_1 :: () => ({-HappyReduction (L.Alex) = -}
+	   Prelude.Int 
+	-> (L.RangedToken)
+	-> HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)
+	-> [HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)] 
+	-> HappyStk HappyAbsSyn 
+	-> (L.Alex) HappyAbsSyn)
 
 happyExpList :: Happy_Data_Array.Array Prelude.Int Prelude.Int
-happyExpList = Happy_Data_Array.listArray (0,6) ([0,0,0
+happyExpList = Happy_Data_Array.listArray (0,7) ([8224,16,0,0
 	])
 
 {-# NOINLINE happyExpListPerState #-}
 happyExpListPerState st =
     token_strs_expected
-  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","empty","string","isChildOf","'|'","%eof"]
+  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","child","string","isChildOf","'|'","%eof"]
         bit_start = st Prelude.* 8
         bit_end = (st Prelude.+ 1) Prelude.* 8
         read_bit = readArrayBit happyExpList
@@ -37,17 +72,26 @@ happyExpListPerState st =
         f (Prelude.False, _) = []
         f (Prelude.True, nr) = [token_strs Prelude.!! nr]
 
-action_0 (4) = happyGoto action_2
-action_0 _ = happyReduce_1
+action_0 (6) = happyShift action_2
+action_0 (4) = happyGoto action_3
+action_0 _ = happyFail (happyExpListPerState 0)
 
+action_1 (6) = happyShift action_2
 action_1 _ = happyFail (happyExpListPerState 1)
 
-action_2 (8) = happyAccept
+action_2 (5) = happyShift action_4
 action_2 _ = happyFail (happyExpListPerState 2)
 
-happyReduce_1 = happySpecReduce_0  4 happyReduction_1
-happyReduction_1  =  HappyAbsSyn4
-		 (
+action_3 (8) = happyAccept
+action_3 _ = happyFail (happyExpListPerState 3)
+
+action_4 _ = happyReduce_1
+
+happyReduce_1 = happySpecReduce_2  4 happyReduction_1
+happyReduction_1 _
+	_
+	 =  HappyAbsSyn4
+		 (IsChildOf "farts"
 	)
 
 happyNewToken action sts stk
@@ -80,10 +124,29 @@ parseTreeSurgeon = happySomeParser where
 happySeq = happyDontSeq
 
 
+-- | Build a simple node by extracting its token type and range.
+unTok :: L.RangedToken -> (L.Range -> L.Token -> a) -> a
+unTok (L.RangedToken tok range) ctor = ctor range tok
+
+-- | Unsafely extracts the the metainformation field of a node.
+info :: Foldable f => f a -> a
+info = fromJust . getFirst . foldMap pure
+
+-- | Performs the union of two ranges by creating a new range starting at the
+-- start position of the first range, and stopping at the stop position of the
+-- second range.
+-- Invariant: The LHS range starts before the RHS range.
+(<->) :: L.Range -> L.Range -> L.Range
+L.Range a1 _ <-> L.Range _ b2 = L.Range a1 b2
+
 parseError :: L.RangedToken -> L.Alex a
 parseError _ = do
   (L.AlexPn _ line column, _, _, _) <- L.alexGetInput
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
+
+data IsChildOf =
+    IsChildOf String
+    deriving (Eq, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)

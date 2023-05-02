@@ -29,6 +29,7 @@
               # ghcid
               cabal-install
               happy
+              alex
             ];
           shellHook = "command -v fish &> /dev/null && fish";
           };
