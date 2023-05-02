@@ -1,0 +1,79 @@
+{
+module Lexer
+  ( -- * Invoking Alex
+    Alex
+  , AlexPosn (..)
+  , alexGetInput
+  , alexError
+  , runAlex
+  , alexMonadScan
+
+  , Range (..)
+  , RangedToken (..)
+  , Token (..)
+  , scanMany
+  ) where
+
+import Control.Monad (when)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
+}
+-- In the middle, we insert our definitions for the lexer, which will generate the lexemes for our grammar.
+%wrapper "monadUserState-bytestring"
+
+tokens :-
+
+<0> $white+ 		;
+<0> "|"			{ tok Or }
+
+{
+-- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.
+data AlexUserState = AlexUserState
+  {
+  }
+
+alexInitUserState :: AlexUserState
+alexInitUserState = AlexUserState
+
+alexEOF :: Alex RangedToken
+alexEOF = do
+  (pos, _, _, _) <- alexGetInput
+  pure $ RangedToken EOF (Range pos pos)
+
+data Range = Range
+  { start :: AlexPosn
+  , stop :: AlexPosn
+  } deriving (Eq, Show)
+
+data RangedToken = RangedToken
+  { rtToken :: Token
+  , rtRange :: Range
+  } deriving (Eq, Show)
+
+tok :: Token -> AlexAction RangedToken
+tok ctor inp len =
+  pure RangedToken
+    { rtToken = ctor
+    , rtRange = mkRange inp len
+    }
+
+data Token
+  = Or
+  | EOF
+  deriving (Eq, Show)
+
+mkRange :: AlexInput -> Int64 -> Range
+mkRange (start, _, str, _) len = Range{start = start, stop = stop}
+  where
+    stop = BS.foldl' alexMove start $ BS.take len str
+
+scanMany :: ByteString -> Either String [RangedToken]
+scanMany input = runAlex input go
+  where
+    go = do
+      output <- alexMonadScan
+      if rtToken output == EOF
+        then pure [output]
+        else (output :) <$> go
+
+}
