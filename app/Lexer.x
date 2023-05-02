@@ -23,8 +23,10 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 tokens :-
 
-<0> $white+ 		;
+<0> $white+ 		{ skip }
 <0> "|"			{ tok Or }
+<0> isChildOf		{ tok IsChildOf }
+<0> \"[^\"]*\" 		{ tokString }
 
 {
 -- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.
@@ -57,8 +59,16 @@ tok ctor inp len =
     , rtRange = mkRange inp len
     }
 
+tokString inp@(_, _, str, _) len =
+  pure RangedToken
+    { rtToken = String $ BS.take len str
+    , rtRange = mkRange inp len
+    }
+
 data Token
   = Or
+  | IsChildOf
+  | String ByteString
   | EOF
   deriving (Eq, Show)
 
