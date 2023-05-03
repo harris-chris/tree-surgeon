@@ -83,3 +83,23 @@ executable tree-surgeon
 
     -- Base language which the package is written in.
     default-language: GHC2021
+
+test-suite test
+    type: 		exitcode-stdio-1.0
+    ghc-options: 	-Wall -Wno-missing-signatures
+    hs-source-dirs: 	test
+    		    	src
+    main-is:    	Tests.hs
+    default-extensions:	OverloadedStrings
+    build-depends: 	base
+                        , HUnit
+                        , text
+                        , hspec
+                        , hspec-contrib
+                        , QuickCheck
+                        , fmt
+                        , optparse-applicative
+                        , filepath
+                        , directory
+    default-language: 	GHC2021
+
