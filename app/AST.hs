@@ -5,16 +5,16 @@ module AST
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 
-data ElementType =
-    File
-    | Directory
+data Element =
+    FileElement
+    { name :: String
+    , parents :: [String]
+    }
+    | DirElement
+    { name :: String
+    , parents :: [String]
+    }
     deriving (Eq, Show)
-
-data Element = Element
-    { parents :: [String]
-    , fname :: String
-    , elementType :: ElementType
-    } deriving (Eq, Show)
 
 class Filters a where
     filters :: a -> Element -> Bool

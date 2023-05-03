@@ -62,6 +62,8 @@ executable tree-surgeon
 
     -- Modules included in this executable, other than Main.
     other-modules:    Lexer
+    	              , Parser
+    	              , AST
 
     -- LANGUAGE extensions used by modules in this package.
     other-extensions: OverloadedStrings
@@ -70,6 +72,8 @@ executable tree-surgeon
     build-depends:    base ^>=4.16.3.0
                       , array ^>=0.5.4.0
                       , bytestring ^>=0.11.4.0
+                      , directory-tree ^>=0.12.1
+                      , filepath ^>=1.4.2.2
 
     build-tool-depends:      alex:alex
                              , happy:happy
