@@ -20,14 +20,20 @@ import qualified Lexer as L
   string     { L.RangedToken (L.String _) _ }
   isChildOf  { L.RangedToken L.IsChildOf _ }
   '|'        { L.RangedToken L.Or _ }
+  '('        { L.RangedToken L.LPar _ }
+  ')'        { L.RangedToken L.RPar _ }
+
+%right isChildOf
+%left '|'
+%left '&'
 
 %%
 
-or :: { Exp L.Range }
-  : exp '|' exp { Or (info $1 <-> info $3) $1 $3 }
-
 exp :: { Exp L.Range }
-  : isChildOf string { unTok $2 (\_ (L.String str) -> IsChildOf str) }
+  : isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  | string        	{ unTok $1 (\range (L.String string) -> EString range string) }
+  | '(' exp ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
 
 {
 
@@ -52,8 +58,10 @@ parseError _ = do
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
 
 data Exp a =
-    IsChildOf ByteString
+    IsChildOf a (Exp a)
     | Or a (Exp a) (Exp a)
+    | EPar a (Exp a)
+    | EString a ByteString
     deriving (Foldable, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a

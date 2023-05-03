@@ -28,6 +28,8 @@ tokens :-
 <0> isChildOf		{ tok IsChildOf }
 <0> \"[^\"]*\" 		{ tokString }
 <0> "--" .*\n 		{ skip }
+<0> "("     		{ tok LPar }
+<0> ")"     		{ tok RPar }
 
 {
 -- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.
@@ -70,6 +72,8 @@ data Token
   = Or
   | IsChildOf
   | String ByteString
+  | LPar
+  | RPar
   | EOF
   deriving (Eq, Show)
 
