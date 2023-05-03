@@ -8,6 +8,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid (First (..))
 
 import qualified Lexer as L
+import AST
 }
 
 %name parseTreeSurgeon exp
@@ -56,13 +57,6 @@ parseError :: L.RangedToken -> L.Alex a
 parseError _ = do
   (L.AlexPn _ line column, _, _, _) <- L.alexGetInput
   L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
-
-data Exp a =
-    IsChildOf a (Exp a)
-    | Or a (Exp a) (Exp a)
-    | EPar a (Exp a)
-    | EString a ByteString
-    deriving (Foldable, Show)
 
 lexer :: (L.RangedToken -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)
