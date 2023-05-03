@@ -1,5 +1,7 @@
 module TreeFilter
   (
+    filterDir
+    , getTree
   ) where
 
 import System.FilePath
@@ -12,4 +14,9 @@ toElements (b :/ t) = toElems b [] t
           toElems p parents (Dir n cs) = Dir n $ map (toElems (p</>n) (n:parents)) cs
           toElems _ _ (Failed n e) = Failed n e
 
+getTree :: FileName -> IO (DirTree [FileName])
+getTree fname =
+    let
+        tree = readDirectoryWith return fname
+    in toElements <$> tree
 

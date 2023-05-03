@@ -4,19 +4,17 @@ import Test.Hspec
 
 import Debug.Trace (trace, traceShowId)
 import System.FilePath
-import System.Directory
+
+import TreeFilter
 
 testData :: FilePath
 testData = "test/test-data"
 
-testDataComp :: FilePath
-testDataComp = testData </> "comp"
-
-testDataTemp :: FilePath
-testDataTemp = testData </> "temp"
-
 main :: IO ()
 main = hspec $ do
-    describe "testThing" $ do
-        it "fucks with my head" $ do
-            1 `shouldBe` 1
+    describe "filterTree" $ do
+        it "Correctly reproduces a tree if include is used" $ do
+            let origTree = getTree testData
+            let filteredTree = filterDir "include" origTree
+            origTree `shouldBe` filteredTree
+
