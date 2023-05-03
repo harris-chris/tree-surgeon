@@ -23,7 +23,7 @@ import qualified Lexer as L
   '('        { L.RangedToken L.LPar _ }
   ')'        { L.RangedToken L.RPar _ }
 
-%right isChildOf
+%left isChildOf
 %left '|'
 %left '&'
 
