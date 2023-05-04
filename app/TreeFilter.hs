@@ -21,13 +21,13 @@ toElements' parents (Dir name contents) =
     in Dir name contents'
 toElements' _ (Failed name error) = Failed name error
 
-applyFilterWith :: FileName -> ByteString -> (DirTree FsObjData -> ()) -> IO ()
+applyFilterWith :: FileName -> ByteString -> (DirTree FsObjData -> IO()) -> IO ()
 applyFilterWith dirname filterStr ioF =
-    let tree = readDirectoryWith return dirname
-        tree' = toElements <$> tree
+    let treeIO = readDirectoryWith return dirname
+        treeIO' = toElements <$> treeIO
     in case L.runAlex filterStr parseTreeSurgeon of
         Left str -> putStrLn str
-        Right exp -> ioF <$> (filterTree exp <$> tree')
+        Right exp -> (filterTree exp <$> treeIO') >>= ioF
 
 filterTree :: Exp a -> DirTree FsObjData -> DirTree FsObjData
 filterTree exp tree = filterDir filterF tree
