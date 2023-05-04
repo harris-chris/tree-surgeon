@@ -9,8 +9,8 @@ import System.Directory.Tree
 import AST
 import TreeFilter
 
-testData :: FilePath
-testData = "test/test-data"
+testDataPath :: FilePath
+testDataPath = "test/test-data"
 
 treeA :: DirTree ()
 treeA = Dir "a" [
@@ -40,5 +40,8 @@ main = hspec $ do
     describe "filterTree" $ do
         it "Correctly reproduces a tree if include is used" $ do
             let expected = treeTestData
-            applyFilterWith "./test-data" "include" ( compareToExpected expected )
+            applyFilterWith testDataPath "include" ( compareToExpected expected )
+        it "Correctly excludes all folders but one with isChildOf" $ do
+            let expected = Dir "test-data" [ treeA ]
+            applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
 
