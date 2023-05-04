@@ -4,6 +4,7 @@ module Parser
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Maybe (fromJust)
 import Data.Monoid (First (..))
 
@@ -32,11 +33,19 @@ import AST
 
 exp :: { Exp L.Range }
   : isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
-  | string        	{ unTok $1 (\range (L.String string) -> EString range string) }
+  | string        	{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '(' exp ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
 
 {
+
+-- | Remove quote marks from a string
+unQuote :: ByteString -> ByteString
+unQuote bs = BS.pack $ unQuote' $ BS.unpack bs
+
+unQuote' :: String -> String
+unQuote' ('\"':ss) = unQuote' $ reverse ss
+unQuote' ss = ss
 
 -- | Build a simple node by extracting its token type and range.
 unTok :: L.RangedToken -> (L.Range -> L.Token -> a) -> a

@@ -4,6 +4,7 @@ module Parser
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Maybe (fromJust)
 import Data.Monoid (First (..))
 
@@ -137,7 +138,7 @@ happyReduction_1 _ _  = notHappyAtAll
 happyReduce_2 = happySpecReduce_1  4 happyReduction_2
 happyReduction_2 (HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
-		 (unTok happy_var_1 (\range (L.String string) -> EString range string)
+		 (unTok happy_var_1 (\range (L.String str) -> EString range $ unQuote str)
 	)
 happyReduction_2 _  = notHappyAtAll 
 
@@ -190,6 +191,14 @@ parseTreeSurgeon = happySomeParser where
 
 happySeq = happyDontSeq
 
+
+-- | Remove quote marks from a string
+unQuote :: ByteString -> ByteString
+unQuote bs = BS.pack $ unQuote' $ BS.unpack bs
+
+unQuote' :: String -> String
+unQuote' ('\"':ss) = unQuote' $ reverse ss
+unQuote' ss = ss
 
 -- | Build a simple node by extracting its token type and range.
 unTok :: L.RangedToken -> (L.Range -> L.Token -> a) -> a
