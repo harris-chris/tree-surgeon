@@ -27,8 +27,8 @@ instance Show a => FiltersFsObjData (Exp a) where
     filterObjData (IsChildOf _ (EString _ x)) name objData = elem x $ parents objData
     filterObjData (NameEndsWith _ (EString _ x)) name objData = isSuffixOf x name
     filterObjData (Or _ x y) name objData =
-        filterObjData (trace ("x = " ++ show x) x) name objData || filterObjData (trace ("y = " ++ show y) y) name objData
-    filterObjData (EPar _ x) name objData = True
+        filterObjData x name objData || filterObjData y name objData
+    filterObjData (EPar _ x) name objData = filterObjData x name objData
     filterObjData (EString _ x) name objData = True
 
 

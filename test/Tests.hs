@@ -50,8 +50,15 @@ main = hspec $ do
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             applyFilterWith testDataPath "nameEndsWith \".cpp\"" ( compareToExpected expected )
-        it "Correctly executes |" $ do
+        it "Correctly executes exp | exp" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
             applyFilterWith testDataPath "nameEndsWith \".cpp\" | isChildOf \"b\"" ( compareToExpected expected )
+        it "Correctly executes ( exp )" $ do
+            let expected = Dir "test-data" [ treeA ]
+            applyFilterWith testDataPath "(isChildOf \"a\")" ( compareToExpected expected )
+        it "Correctly executes ( exp | exp )" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' , treeB ]
+            applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" )" ( compareToExpected expected )
 
