@@ -26,10 +26,10 @@ import AST
   '('        	{ L.RangedToken L.LPar _ }
   ')'        	{ L.RangedToken L.RPar _ }
 
-%left isChildOf
-%left nameEndsWith
 %left '|'
 %left '&'
+%left isChildOf
+%left nameEndsWith
 
 %%
 

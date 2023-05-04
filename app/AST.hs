@@ -12,8 +12,8 @@ data FsObjData =
     FileData { parents :: [ByteString] }
     deriving (Eq, Show)
 
-class FiltersFsObjData a where
-    filterObjData :: a -> ByteString -> FsObjData -> Bool
+class Show a => FiltersFsObjData a where
+    filterObjData :: Show a => a -> ByteString -> FsObjData -> Bool
 
 data Exp a =
     IsChildOf a (Exp a)
@@ -23,11 +23,11 @@ data Exp a =
     | EString a ByteString
     deriving (Foldable, Show)
 
-instance FiltersFsObjData (Exp a) where
+instance Show a => FiltersFsObjData (Exp a) where
     filterObjData (IsChildOf _ (EString _ x)) name objData = elem x $ parents objData
     filterObjData (NameEndsWith _ (EString _ x)) name objData = isSuffixOf x name
     filterObjData (Or _ x y) name objData =
-        filterObjData x name objData || filterObjData y name objData
+        filterObjData (trace ("x = " ++ show x) x) name objData || filterObjData (trace ("y = " ++ show y) y) name objData
     filterObjData (EPar _ x) name objData = True
     filterObjData (EString _ x) name objData = True
 

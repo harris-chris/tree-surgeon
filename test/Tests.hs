@@ -42,7 +42,7 @@ main = hspec $ do
         it "Correctly reproduces a tree if include is used" $ do
             let expected = treeTestData
             applyFilterWith testDataPath "asses" ( compareToExpected expected )
-        it "Correctly excludes all folders but one with isChildOf" $ do
+        it "Correctly executes isChildOf" $ do
             let expected = Dir "test-data" [ treeA ]
             applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
         it "Correctly executes nameEndsWith" $ do
@@ -50,4 +50,8 @@ main = hspec $ do
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             applyFilterWith testDataPath "nameEndsWith \".cpp\"" ( compareToExpected expected )
+        it "Correctly executes |" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' , treeB ]
+            applyFilterWith testDataPath "nameEndsWith \".cpp\" | isChildOf \"b\"" ( compareToExpected expected )
 

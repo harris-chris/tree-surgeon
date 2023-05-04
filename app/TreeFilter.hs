@@ -5,6 +5,7 @@ module TreeFilter
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
+import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
 import AST
@@ -29,8 +30,8 @@ applyFilterWith dirname filterStr ioF =
         Left str -> putStrLn str
         Right exp -> (filterTreeWith exp <$> treeIO') >>= ioF
 
-filterTreeFiles :: Exp a -> DirTree FsObjData -> Bool
-filterTreeFiles exp (File name objData) = filterObjData exp (pack name) objData
+filterTreeFiles :: Show a => Exp a -> DirTree FsObjData -> Bool
+filterTreeFiles exp (File name objData) = filterObjData (trace ("exp = " ++ show exp) exp) (pack name) objData
 filterTreeFiles exp (Dir _ _) = True
 filterTreeFiles exp (Failed _ _) = True
 
@@ -40,7 +41,7 @@ filterTreeDirs (Dir _ []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: Exp a -> DirTree FsObjData -> DirTree FsObjData
+filterTreeWith :: Show a => Exp a -> DirTree FsObjData -> DirTree FsObjData
 filterTreeWith exp tree =
     let filesFiltered = filterDir (filterTreeFiles exp) tree
     in filterDir filterTreeDirs filesFiltered
