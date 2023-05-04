@@ -43,14 +43,19 @@ applyFilterWith dirname filterStr ioF =
 --           filterF (Dir n (x:xs)) = True
 --           filterF (Failed _ _) = True
 
-filterTreeF :: Exp a -> DirTree FsObjData -> Bool
-filterTreeF exp (File name objData) = filterObjData exp name objData
-filterTreeF exp (Dir _ []) = False
-filterTreeF exp (Dir name (c:cx)) =
-    let contents' = map (filterTreeF exp) (c:cx)
-    in not $ null contents'
-filterTreeF exp (Failed _ _) = True
+filterTreeFiles :: Exp a -> DirTree FsObjData -> Bool
+filterTreeFiles exp (File name objData) = filterObjData exp name objData
+filterTreeFiles exp (Dir _ _) = True
+filterTreeFiles exp (Failed _ _) = True
+
+filterTreeDirs :: DirTree FsObjData -> Bool
+filterTreeDirs (File _ _) = True
+filterTreeDirs (Dir _ []) = False
+filterTreeDirs (Dir _ (c:cx)) = True
+filterTreeDirs (Failed _ _) = True
 
 filterTreeWith :: Exp a -> DirTree FsObjData -> DirTree FsObjData
-filterTreeWith exp tree = filterDir (filterTreeF exp) tree
+filterTreeWith exp tree =
+    let filesFiltered = filterDir (filterTreeFiles exp) tree
+    in filterDir filterTreeDirs filesFiltered
 
