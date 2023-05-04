@@ -15,6 +15,6 @@ main = hspec $ do
     describe "filterTree" $ do
         it "Correctly reproduces a tree if include is used" $ do
             let origTree = getTree testData
-            let filteredTree = filterDir "include" origTree
+            let filteredTree = filterTree "include" origTree
             origTree `shouldBe` filteredTree
 

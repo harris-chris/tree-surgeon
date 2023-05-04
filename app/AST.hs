@@ -1,23 +1,18 @@
 module AST
   (
     Exp(..)
+    , FsObjData(..)
+    , FiltersFsObjData(..)
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 
-data Element =
-    FileElement
-    { name :: String
-    , parents :: [String]
-    }
-    | DirElement
-    { name :: String
-    , parents :: [String]
-    }
+data FsObjData =
+    FileData { parents :: [String] }
     deriving (Eq, Show)
 
-class Filters a where
-    filters :: a -> Element -> Bool
+class FiltersFsObjData a where
+    filterObjData :: a -> name -> FsObjData -> Bool
 
 data Exp a =
     IsChildOf a (Exp a)
@@ -26,9 +21,10 @@ data Exp a =
     | EString a ByteString
     deriving (Foldable, Show)
 
-instance Filters (Exp a) where
-    filters (IsChildOf _ x) elem = True
-    filters (Or _ x y) elem = True
-    filters (EPar _ x) elem = True
-    filters (EString _ x) elem = True
+instance FiltersFsObjData (Exp a) where
+    filterObjData (IsChildOf _ x) name objData = True
+    filterObjData (Or _ x y) name objData = True
+    filterObjData (EPar _ x) name objData = True
+    filterObjData (EString _ x) name objData = True
+
 

@@ -1,22 +1,37 @@
 module TreeFilter
   (
     filterDir
-    , getTree
+    , applyFilterWith
   ) where
 
+import Data.ByteString.Lazy.Char8 (ByteString)
 import System.FilePath
 import System.Directory.Tree
 import AST
+import qualified Lexer as L
+import Parser (parseTreeSurgeon)
 
-toElements :: AnchoredDirTree a -> DirTree [FileName]
-toElements (b :/ t) = toElems b [] t
-    where toElems p parents (File n _) = File n parents
-          toElems p parents (Dir n cs) = Dir n $ map (toElems (p</>n) (n:parents)) cs
-          toElems _ _ (Failed n e) = Failed n e
+toElements :: AnchoredDirTree a -> DirTree FsObjData
+toElements (b :/ t) = toElements' [] t
 
-getTree :: FileName -> IO (DirTree [FileName])
-getTree fname =
-    let
-        tree = readDirectoryWith return fname
-    in toElements <$> tree
+toElements' :: [FileName] -> DirTree a -> DirTree FsObjData
+toElements' parents (File name _) = File name (FileData parents)
+toElements' parents (Dir name contents) =
+    let contents' = map (toElements' (name:parents)) contents
+    in Dir name contents'
+toElements' _ (Failed name error) = Failed name error
+
+applyFilterWith :: FileName -> ByteString -> (DirTree FsObjData -> ()) -> IO ()
+applyFilterWith dirname filterStr ioF =
+    let tree = readDirectoryWith return dirname
+        tree' = toElements <$> tree
+    in case L.runAlex filterStr parseTreeSurgeon of
+        Left str -> putStrLn str
+        Right exp -> ioF <$> (filterTree exp <$> tree')
+
+filterTree :: Exp a -> DirTree FsObjData -> DirTree FsObjData
+filterTree exp tree = filterDir filterF tree
+    where filterF (File name objData) = filterObjData exp name objData
+          filterF (Dir _ _) = True
+          filterF (Failed _ _) = True
 
