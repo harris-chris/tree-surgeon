@@ -2,6 +2,7 @@ import Prelude hiding (Word, getLine)
 
 import Test.Hspec
 
+import Data.ByteString.Lazy.Char8 (ByteString, pack, isSuffixOf)
 import Debug.Trace (trace, traceShowId)
 import System.FilePath
 import System.Directory.Tree
@@ -40,8 +41,13 @@ main = hspec $ do
     describe "filterTree" $ do
         it "Correctly reproduces a tree if include is used" $ do
             let expected = treeTestData
-            applyFilterWith testDataPath "include" ( compareToExpected expected )
+            applyFilterWith testDataPath "asses" ( compareToExpected expected )
         it "Correctly excludes all folders but one with isChildOf" $ do
             let expected = Dir "test-data" [ treeA ]
             applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
+        it "Correctly executes nameEndsWith" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
+            let expected = Dir "test-data" [ treeA' , treeB' ]
+            applyFilterWith testDataPath "nameEndsWith \".cpp\"" ( compareToExpected expected )
 

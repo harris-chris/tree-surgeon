@@ -47,7 +47,9 @@ action_0,
  action_7,
  action_8,
  action_9,
- action_10 :: () => Prelude.Int -> ({-HappyReduction (L.Alex) = -}
+ action_10,
+ action_11,
+ action_12 :: () => Prelude.Int -> ({-HappyReduction (L.Alex) = -}
 	   Prelude.Int 
 	-> (L.RangedToken)
 	-> HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)
@@ -58,7 +60,8 @@ action_0,
 happyReduce_1,
  happyReduce_2,
  happyReduce_3,
- happyReduce_4 :: () => ({-HappyReduction (L.Alex) = -}
+ happyReduce_4,
+ happyReduce_5 :: () => ({-HappyReduction (L.Alex) = -}
 	   Prelude.Int 
 	-> (L.RangedToken)
 	-> HappyState (L.RangedToken) (HappyStk HappyAbsSyn -> (L.Alex) HappyAbsSyn)
@@ -67,25 +70,26 @@ happyReduce_1,
 	-> (L.Alex) HappyAbsSyn)
 
 happyExpList :: Happy_Data_Array.Array Prelude.Int Prelude.Int
-happyExpList = Happy_Data_Array.listArray (0,19) ([32944,2816,16,704,11284,64,0,0
+happyExpList = Happy_Data_Array.listArray (0,23) ([368,23553,256,47104,1472,32848,2944,32,0,0
 	])
 
 {-# NOINLINE happyExpListPerState #-}
 happyExpListPerState st =
     token_strs_expected
-  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","exp","string","isChildOf","'|'","'('","')'","%eof"]
-        bit_start = st Prelude.* 10
-        bit_end = (st Prelude.+ 1) Prelude.* 10
+  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","exp","string","isChildOf","nameEndsWith","'|'","'('","')'","%eof"]
+        bit_start = st Prelude.* 11
+        bit_end = (st Prelude.+ 1) Prelude.* 11
         read_bit = readArrayBit happyExpList
         bits = Prelude.map read_bit [bit_start..bit_end Prelude.- 1]
-        bits_indexed = Prelude.zip bits [0..9]
+        bits_indexed = Prelude.zip bits [0..10]
         token_strs_expected = Prelude.concatMap f bits_indexed
         f (Prelude.False, _) = []
         f (Prelude.True, nr) = [token_strs Prelude.!! nr]
 
 action_0 (5) = happyShift action_4
 action_0 (6) = happyShift action_2
-action_0 (8) = happyShift action_5
+action_0 (7) = happyShift action_5
+action_0 (9) = happyShift action_6
 action_0 (4) = happyGoto action_3
 action_0 _ = happyFail (happyExpListPerState 0)
 
@@ -94,38 +98,51 @@ action_1 _ = happyFail (happyExpListPerState 1)
 
 action_2 (5) = happyShift action_4
 action_2 (6) = happyShift action_2
-action_2 (8) = happyShift action_5
-action_2 (4) = happyGoto action_8
+action_2 (7) = happyShift action_5
+action_2 (9) = happyShift action_6
+action_2 (4) = happyGoto action_10
 action_2 _ = happyFail (happyExpListPerState 2)
 
-action_3 (7) = happyShift action_7
-action_3 (10) = happyAccept
+action_3 (8) = happyShift action_9
+action_3 (11) = happyAccept
 action_3 _ = happyFail (happyExpListPerState 3)
 
-action_4 _ = happyReduce_2
+action_4 _ = happyReduce_3
 
 action_5 (5) = happyShift action_4
 action_5 (6) = happyShift action_2
-action_5 (8) = happyShift action_5
-action_5 (4) = happyGoto action_6
+action_5 (7) = happyShift action_5
+action_5 (9) = happyShift action_6
+action_5 (4) = happyGoto action_8
 action_5 _ = happyFail (happyExpListPerState 5)
 
-action_6 (7) = happyShift action_7
-action_6 (9) = happyShift action_10
+action_6 (5) = happyShift action_4
+action_6 (6) = happyShift action_2
+action_6 (7) = happyShift action_5
+action_6 (9) = happyShift action_6
+action_6 (4) = happyGoto action_7
 action_6 _ = happyFail (happyExpListPerState 6)
 
-action_7 (5) = happyShift action_4
-action_7 (6) = happyShift action_2
-action_7 (8) = happyShift action_5
-action_7 (4) = happyGoto action_9
+action_7 (8) = happyShift action_9
+action_7 (10) = happyShift action_12
 action_7 _ = happyFail (happyExpListPerState 7)
 
-action_8 (7) = happyShift action_7
-action_8 _ = happyReduce_1
+action_8 (8) = happyShift action_9
+action_8 _ = happyReduce_2
 
-action_9 _ = happyReduce_4
+action_9 (5) = happyShift action_4
+action_9 (6) = happyShift action_2
+action_9 (7) = happyShift action_5
+action_9 (9) = happyShift action_6
+action_9 (4) = happyGoto action_11
+action_9 _ = happyFail (happyExpListPerState 9)
 
-action_10 _ = happyReduce_3
+action_10 (8) = happyShift action_9
+action_10 _ = happyReduce_1
+
+action_11 _ = happyReduce_5
+
+action_12 _ = happyReduce_4
 
 happyReduce_1 = happySpecReduce_2  4 happyReduction_1
 happyReduction_1 (HappyAbsSyn4  happy_var_2)
@@ -135,45 +152,54 @@ happyReduction_1 (HappyAbsSyn4  happy_var_2)
 	)
 happyReduction_1 _ _  = notHappyAtAll 
 
-happyReduce_2 = happySpecReduce_1  4 happyReduction_2
-happyReduction_2 (HappyTerminal happy_var_1)
+happyReduce_2 = happySpecReduce_2  4 happyReduction_2
+happyReduction_2 (HappyAbsSyn4  happy_var_2)
+	(HappyTerminal happy_var_1)
+	 =  HappyAbsSyn4
+		 (NameEndsWith (L.rtRange happy_var_1 <-> info happy_var_2) happy_var_2
+	)
+happyReduction_2 _ _  = notHappyAtAll 
+
+happyReduce_3 = happySpecReduce_1  4 happyReduction_3
+happyReduction_3 (HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
 		 (unTok happy_var_1 (\range (L.String str) -> EString range $ unQuote str)
 	)
-happyReduction_2 _  = notHappyAtAll 
+happyReduction_3 _  = notHappyAtAll 
 
-happyReduce_3 = happySpecReduce_3  4 happyReduction_3
-happyReduction_3 (HappyTerminal happy_var_3)
+happyReduce_4 = happySpecReduce_3  4 happyReduction_4
+happyReduction_4 (HappyTerminal happy_var_3)
 	(HappyAbsSyn4  happy_var_2)
 	(HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
 		 (EPar (L.rtRange happy_var_1 <-> L.rtRange happy_var_3) happy_var_2
 	)
-happyReduction_3 _ _ _  = notHappyAtAll 
+happyReduction_4 _ _ _  = notHappyAtAll 
 
-happyReduce_4 = happySpecReduce_3  4 happyReduction_4
-happyReduction_4 (HappyAbsSyn4  happy_var_3)
+happyReduce_5 = happySpecReduce_3  4 happyReduction_5
+happyReduction_5 (HappyAbsSyn4  happy_var_3)
 	_
 	(HappyAbsSyn4  happy_var_1)
 	 =  HappyAbsSyn4
 		 (Or (info happy_var_1 <-> info happy_var_3) happy_var_1 happy_var_3
 	)
-happyReduction_4 _ _ _  = notHappyAtAll 
+happyReduction_5 _ _ _  = notHappyAtAll 
 
 happyNewToken action sts stk
 	= lexer(\tk -> 
 	let cont i = action i i tk (HappyState action) sts stk in
 	case tk of {
-	L.RangedToken L.EOF _ -> action 10 10 tk (HappyState action) sts stk;
+	L.RangedToken L.EOF _ -> action 11 11 tk (HappyState action) sts stk;
 	L.RangedToken (L.String _) _ -> cont 5;
 	L.RangedToken L.IsChildOf _ -> cont 6;
-	L.RangedToken L.Or _ -> cont 7;
-	L.RangedToken L.LPar _ -> cont 8;
-	L.RangedToken L.RPar _ -> cont 9;
+	L.RangedToken L.NameEndsWith _ -> cont 7;
+	L.RangedToken L.Or _ -> cont 8;
+	L.RangedToken L.LPar _ -> cont 9;
+	L.RangedToken L.RPar _ -> cont 10;
 	_ -> happyError' (tk, [])
 	})
 
-happyError_ explist 10 tk = happyError' (tk, explist)
+happyError_ explist 11 tk = happyError' (tk, explist)
 happyError_ explist _ tk = happyError' (tk, explist)
 
 happyThen :: () => L.Alex a -> (a -> L.Alex b) -> L.Alex b

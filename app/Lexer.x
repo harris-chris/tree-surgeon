@@ -28,6 +28,7 @@ tokens :-
 <0> isChildOf		{ tok IsChildOf }
 <0> \"[^\"]*\" 		{ tokString }
 <0> "--" .*\n 		{ skip }
+<0> nameEndsWith        { tok NameEndsWith }
 <0> "("     		{ tok LPar }
 <0> ")"     		{ tok RPar }
 
@@ -75,6 +76,7 @@ data Token
   | LPar
   | RPar
   | EOF
+  | NameEndsWith
   deriving (Eq, Show)
 
 mkRange :: AlexInput -> Int64 -> Range

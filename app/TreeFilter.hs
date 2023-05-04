@@ -29,22 +29,8 @@ applyFilterWith dirname filterStr ioF =
         Left str -> putStrLn str
         Right exp -> (filterTreeWith exp <$> treeIO') >>= ioF
 
--- filterTreeFiles :: Exp a -> DirTree FsObjData -> DirTree FsObjData
--- filterTreeFiles exp tree = filterDir filterF tree
---     where filterF (File name objData) = filterObjData exp name objData
---           filterF (Dir _ []) = False
---           filterF (Dir _ (x:xs)) = True
---           filterF (Failed _ _) = True
-
--- filterTreeDirs :: DirTree FsObjData -> DirTree FsObjData
--- filterTreeDirs tree = filterDir filterF tree
---     where filterF (File _ _) = True
---           filterF (Dir n []) = False
---           filterF (Dir n (x:xs)) = True
---           filterF (Failed _ _) = True
-
 filterTreeFiles :: Exp a -> DirTree FsObjData -> Bool
-filterTreeFiles exp (File name objData) = filterObjData exp name objData
+filterTreeFiles exp (File name objData) = filterObjData exp (pack name) objData
 filterTreeFiles exp (Dir _ _) = True
 filterTreeFiles exp (Failed _ _) = True
 
