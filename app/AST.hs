@@ -1,7 +1,7 @@
 module AST
   (
     Exp(..)
-    , StringParam(..)
+    , StringAtom(..)
     , FsObjData(..)
     , FiltersFsObjData(..)
   ) where
@@ -17,24 +17,25 @@ class Show a => FiltersFsObjData a where
     filterObjData :: Show a => a -> ByteString -> FsObjData -> Bool
 
 data Exp a =
-    IsChildOf a (StringParam a)
-    | NameEndsWith a (StringParam a)
+    IsChildOf a (StringAtom a)
+    | NameEndsWith a (StringAtom a)
     | Or a (Exp a) (Exp a)
     | And a (Exp a) (Exp a)
     | EPar a (Exp a)
     deriving (Foldable, Show)
 
-data StringParam a =
-    SString a ByteString
-    | SPar a (StringParam a)
-    | SList a [StringParam a]
+data StringAtom a =
+    StringString a ByteString
+    | StringInteger a Integer
+    | StringPar a (StringAtom a)
+    | StringList a [StringAtom a]
     deriving (Foldable, Show)
 
 instance Show a => FiltersFsObjData (Exp a) where
-    filterObjData (IsChildOf _ (SString _ x)) name objData = elem x $ parents objData
-    filterObjData (IsChildOf _ (SList _ xs)) name objData =
-        any (\(SString _ x) -> elem x $ parents objData) xs
-    filterObjData (NameEndsWith _ (SString _ x)) name objData = isSuffixOf x name
+    filterObjData (IsChildOf _ (StringString _ x)) name objData = elem x $ parents objData
+    filterObjData (IsChildOf _ (StringList _ xs)) name objData =
+        any (\(StringString _ x) -> elem x $ parents objData) xs
+    filterObjData (NameEndsWith _ (StringString _ x)) name objData = isSuffixOf x name
     filterObjData (Or _ x y) name objData =
         (filterObjData x name objData) || (filterObjData y name objData)
     filterObjData (And _ x y) name objData =

@@ -37,6 +37,7 @@ tokens :-
 <0> "]"     		{ tok RBrack }
 <0> ","     		{ tok Comma }
 -- Values
+<0> [0-9]+ 		{ tokInteger }
 <0> \"[^\"]*\" 		{ tokString }
 -- Comments
 <0> "--" .*\n 		{ skip }
@@ -72,6 +73,14 @@ tok ctor inp len =
     , rtRange = mkRange inp len
     }
 
+tokInteger :: AlexAction RangedToken
+tokInteger inp@(_, _, str, _) len =
+  pure RangedToken
+    { rtToken = Integer $ read $ BS.unpack $ BS.take len str
+    , rtRange = mkRange inp len
+    }
+
+tokString :: AlexAction RangedToken
 tokString inp@(_, _, str, _) len =
   pure RangedToken
     { rtToken = String $ BS.take len str
@@ -83,6 +92,7 @@ data Token
   | And
   | IsChildOf
   | String ByteString
+  | Integer Integer
   | LPar
   | RPar
   | LBrack

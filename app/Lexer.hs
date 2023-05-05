@@ -466,7 +466,7 @@ alex_gscan stop__ p c bs inp__ (sc,state__) =
 alex_tab_size :: Int
 alex_tab_size = 8
 alex_base :: Array Int Int
-alex_base = listArray (0 :: Int, 52)
+alex_base = listArray (0 :: Int, 53)
   [ -8
   , -95
   , -103
@@ -486,7 +486,7 @@ alex_base = listArray (0 :: Int, 52)
   , -26
   , 0
   , 0
-  , 29
+  , 41
   , -77
   , 0
   , 11
@@ -510,6 +510,7 @@ alex_base = listArray (0 :: Int, 52)
   , 0
   , 0
   , 0
+  , 7
   , 0
   , 0
   , 0
@@ -530,10 +531,10 @@ alex_table = listArray (0 :: Int, 1702)
   , 19
   , 19
   , 19
+  , 52
   , 51
   , 50
   , 49
-  , 48
   , 6
   , 8
   , 9
@@ -544,7 +545,7 @@ alex_table = listArray (0 :: Int, 1702)
   , 14
   , 15
   , 22
-  , 52
+  , 53
   , 21
   , 4
   , 5
@@ -556,27 +557,39 @@ alex_table = listArray (0 :: Int, 1702)
   , 0
   , 17
   , 0
+  , 48
   , 47
-  , 46
+  , 0
+  , 0
+  , 44
+  , 16
   , 0
   , 0
   , 43
-  , 16
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
   , 19
   , 19
   , 19
   , 19
   , 19
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
+  , 43
   , 0
   , 0
   , 0
@@ -595,21 +608,9 @@ alex_table = listArray (0 :: Int, 1702)
   , 0
   , 0
   , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
+  , 46
   , 0
   , 45
-  , 0
-  , 44
   , 0
   , 0
   , 0
@@ -2269,21 +2270,33 @@ alex_check = listArray (0 :: Int, 1702)
   , -1
   , 44
   , 45
+  , -1
+  , -1
+  , 48
+  , 49
+  , 50
+  , 51
+  , 52
+  , 53
+  , 54
+  , 55
+  , 56
+  , 57
   , 9
   , 10
   , 11
   , 12
   , 13
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
+  , 48
+  , 49
+  , 50
+  , 51
+  , 52
+  , 53
+  , 54
+  , 55
+  , 56
+  , 57
   , -1
   , -1
   , -1
@@ -2293,18 +2306,6 @@ alex_check = listArray (0 :: Int, 1702)
   , -1
   , -1
   , 32
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
   , -1
   , -1
   , -1
@@ -3937,7 +3938,7 @@ alex_check = listArray (0 :: Int, 1702)
   ]
 
 alex_deflt :: Array Int Int
-alex_deflt = listArray (0 :: Int, 52)
+alex_deflt = listArray (0 :: Int, 53)
   [ -1
   , -1
   , -1
@@ -3991,10 +3992,20 @@ alex_deflt = listArray (0 :: Int, 52)
   , -1
   , -1
   , -1
+  , -1
   ]
 
-alex_accept = listArray (0 :: Int, 52)
+alex_accept = listArray (0 :: Int, 53)
   [ AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAcc 12
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
   , AlexAccNone
   , AlexAccNone
   , AlexAccNone
@@ -4002,18 +4013,20 @@ alex_accept = listArray (0 :: Int, 52)
   , AlexAccNone
   , AlexAcc 11
   , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
   , AlexAcc 10
-  , AlexAccNone
   , AlexAcc 9
   , AlexAcc 8
+  , AlexAccNone
   , AlexAcc 7
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
   , AlexAccNone
   , AlexAcc 6
   , AlexAccNone
@@ -4027,16 +4040,6 @@ alex_accept = listArray (0 :: Int, 52)
   , AlexAccNone
   , AlexAccNone
   , AlexAcc 5
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
   , AlexAcc 4
   , AlexAcc 3
   , AlexAcc 2
@@ -4049,12 +4052,13 @@ alex_accept = listArray (0 :: Int, 52)
   , AlexAccNone
   ]
 
-alex_actions = array (0 :: Int, 12)
-  [ (11,alex_action_4)
-  , (10,alex_action_3)
-  , (9,alex_action_2)
-  , (8,alex_action_1)
-  , (7,alex_action_0)
+alex_actions = array (0 :: Int, 13)
+  [ (12,alex_action_4)
+  , (11,alex_action_3)
+  , (10,alex_action_2)
+  , (9,alex_action_1)
+  , (8,alex_action_0)
+  , (7,alex_action_12)
   , (6,alex_action_11)
   , (5,alex_action_10)
   , (4,alex_action_9)
@@ -4064,7 +4068,7 @@ alex_actions = array (0 :: Int, 12)
   , (0,alex_action_5)
   ]
 
-{-# LINE 44 "app/Lexer.x" #-}
+{-# LINE 45 "app/Lexer.x" #-}
 -- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.
 data AlexUserState = AlexUserState
   {
@@ -4095,6 +4099,14 @@ tok ctor inp len =
     , rtRange = mkRange inp len
     }
 
+tokInteger :: AlexAction RangedToken
+tokInteger inp@(_, _, str, _) len =
+  pure RangedToken
+    { rtToken = Integer $ read $ BS.unpack $ BS.take len str
+    , rtRange = mkRange inp len
+    }
+
+tokString :: AlexAction RangedToken
 tokString inp@(_, _, str, _) len =
   pure RangedToken
     { rtToken = String $ BS.take len str
@@ -4106,6 +4118,7 @@ data Token
   | And
   | IsChildOf
   | String ByteString
+  | Integer Int
   | LPar
   | RPar
   | LBrack
@@ -4138,8 +4151,9 @@ alex_action_6 = tok RPar
 alex_action_7 = tok LBrack
 alex_action_8 = tok RBrack
 alex_action_9 = tok Comma
-alex_action_10 = tokString
-alex_action_11 = skip
+alex_action_10 = tokInteger
+alex_action_11 = tokString
+alex_action_12 = skip
 
 #define ALEX_NOPRED 1
 -- -----------------------------------------------------------------------------

@@ -32,6 +32,7 @@ import AST
   ']'        	{ L.RangedToken L.RBrack _ }
   ','	        { L.RangedToken L.Comma _ }
 -- Values
+  integer       { L.RangedToken (L.Integer _) _ }
   string     	{ L.RangedToken (L.String _) _ }
 
 %left '|'
@@ -51,14 +52,15 @@ sepBy(p, sep)
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
-  | isChildOf atom 		{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
-  | nameEndsWith atom    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | isChildOf stringatom	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  | nameEndsWith stringatom    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
 
-atom :: { StringParam L.Range }
-  : string        		{ unTok $1 (\range (L.String str) -> SString range $ unQuote str) }
-  | '(' atom ')'		{ SPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | '[' sepBy(atom, ',') ']'  	{ SList (L.rtRange $1 <-> L.rtRange $3) $2 }
+stringatom :: { StringAtom L.Range }
+  : integer                  	{ unTok $1 (\range (L.Integer int) -> StringInteger range int) }
+  | string        		{ unTok $1 (\range (L.String str) -> StringString range $ unQuote str) }
+  | '(' stringatom ')'		{ StringPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | '[' sepBy(stringatom, ',') ']'  { StringList (L.rtRange $1 <-> L.rtRange $3) $2 }
 {
 
 -- | Remove quote marks from a string
