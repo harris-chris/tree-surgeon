@@ -33,8 +33,8 @@ treeTestData = Dir "test-data" [ treeA, treeB, treeC ]
 
 compareToExpected :: DirTree () -> DirTree FsObjData -> IO ()
 compareToExpected expected actual =
-    let actual' = () <$ actual
-    in actual' `shouldBe` expected
+    let actual' = () <$ (trace ("actual = " ++ show actual) actual)
+    in (trace ("actual' = " ++ show actual') actual') `shouldBe` expected
 
 main :: IO ()
 main = hspec $ do
@@ -61,4 +61,8 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
             applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" )" ( compareToExpected expected )
+        it "Correctly executes exp & exp" $ do
+            let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeB' ]
+            applyFilterWith testDataPath "nameEndsWith \".cpp\" & isChildOf \"b\"" ( compareToExpected expected )
 

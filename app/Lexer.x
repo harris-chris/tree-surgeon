@@ -25,6 +25,7 @@ tokens :-
 
 <0> $white+ 		{ skip }
 <0> "|"			{ tok Or }
+<0> "&"			{ tok And }
 <0> isChildOf		{ tok IsChildOf }
 <0> \"[^\"]*\" 		{ tokString }
 <0> "--" .*\n 		{ skip }
@@ -71,6 +72,7 @@ tokString inp@(_, _, str, _) len =
 
 data Token
   = Or
+  | And
   | IsChildOf
   | String ByteString
   | LPar

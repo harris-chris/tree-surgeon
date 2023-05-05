@@ -4,13 +4,22 @@ module TreeFilter
     , applyFilterWith
   ) where
 
-import Data.ByteString.Lazy.Char8 (ByteString, pack)
+import Control.Exception
+import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack)
 import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
 import AST
 import qualified Lexer as L
 import Parser (parseTreeSurgeon)
+
+data TreeSurgeonException
+    = Couldn'tParseExp String String
+
+instance Exception TreeSurgeonException
+instance Show TreeSurgeonException where
+    show (Couldn'tParseExp expStr errStr) =
+        "Error:\n" <> errStr <> "\nin expression:\n" <> expStr
 
 toElements :: AnchoredDirTree a -> DirTree FsObjData
 toElements (b :/ t) = toElements' [] t
@@ -27,7 +36,7 @@ applyFilterWith dirname filterStr ioF =
     let treeIO = readDirectoryWith return dirname
         treeIO' = toElements <$> treeIO
     in case L.runAlex filterStr parseTreeSurgeon of
-        Left str -> putStrLn str
+        Left errMsg -> throw $ Couldn'tParseExp (unpack filterStr) errMsg
         Right exp -> (filterTreeWith exp <$> treeIO') >>= ioF
 
 filterTreeFiles :: Show a => Exp a -> DirTree FsObjData -> Bool

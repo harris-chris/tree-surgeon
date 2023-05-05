@@ -19,6 +19,7 @@ data Exp a =
     IsChildOf a (Exp a)
     | NameEndsWith a (Exp a)
     | Or a (Exp a) (Exp a)
+    | And a (Exp a) (Exp a)
     | EPar a (Exp a)
     | EString a ByteString
     deriving (Foldable, Show)
@@ -28,6 +29,8 @@ instance Show a => FiltersFsObjData (Exp a) where
     filterObjData (NameEndsWith _ (EString _ x)) name objData = isSuffixOf x name
     filterObjData (Or _ x y) name objData =
         filterObjData x name objData || filterObjData y name objData
+    filterObjData (And _ x y) name objData =
+        filterObjData x name objData && filterObjData y name objData
     filterObjData (EPar _ x) name objData = filterObjData x name objData
     filterObjData (EString _ x) name objData = True
 
