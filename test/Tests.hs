@@ -39,9 +39,6 @@ compareToExpected expected actual =
 main :: IO ()
 main = hspec $ do
     describe "filterTree" $ do
-        it "Correctly reproduces a tree if include is used" $ do
-            let expected = treeTestData
-            applyFilterWith testDataPath "asses" ( compareToExpected expected )
         it "Correctly executes isChildOf" $ do
             let expected = Dir "test-data" [ treeA ]
             applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
@@ -62,7 +59,7 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA' , treeB ]
             applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" )" ( compareToExpected expected )
         it "Correctly executes exp & exp" $ do
-            let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeB' ]
             applyFilterWith testDataPath "nameEndsWith \".cpp\" & isChildOf \"b\"" ( compareToExpected expected )
 

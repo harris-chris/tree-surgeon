@@ -19,13 +19,17 @@ import AST
 %lexer { lexer } { L.RangedToken L.EOF _ }
 
 %token
-  string     	{ L.RangedToken (L.String _) _ }
-  isChildOf  	{ L.RangedToken L.IsChildOf _ }
-  nameEndsWith  { L.RangedToken L.NameEndsWith _ }
+-- Operators
   '|'        	{ L.RangedToken L.Or _ }
   '&'		{ L.RangedToken L.And _ }
+-- Matchers
+  isChildOf  	{ L.RangedToken L.IsChildOf _ }
+  nameEndsWith  { L.RangedToken L.NameEndsWith _ }
+-- Syntax
   '('        	{ L.RangedToken L.LPar _ }
   ')'        	{ L.RangedToken L.RPar _ }
+-- Values
+  string     	{ L.RangedToken (L.String _) _ }
 
 %left '|'
 %left '&'
@@ -35,11 +39,12 @@ import AST
 %%
 
 exp :: { Exp L.Range }
-  : isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  : exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
+  | exp '&' exp 	{ And (info $1 <-> info $3) $1 $3 }
+  | isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    { NameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | string        	{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '(' exp ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
+  | string        	{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
 
 {
 
