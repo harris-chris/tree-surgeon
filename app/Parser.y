@@ -28,6 +28,9 @@ import AST
 -- Syntax
   '('        	{ L.RangedToken L.LPar _ }
   ')'        	{ L.RangedToken L.RPar _ }
+  '['        	{ L.RangedToken L.LBrack _ }
+  ']'        	{ L.RangedToken L.RBrack _ }
+  ','	        { L.RangedToken L.Comma _ }
 -- Values
   string     	{ L.RangedToken (L.String _) _ }
 
@@ -38,14 +41,24 @@ import AST
 
 %%
 
-exp :: { Exp L.Range }
-  : exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
-  | exp '&' exp 	{ And (info $1 <-> info $3) $1 $3 }
-  | isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
-  | nameEndsWith exp    { NameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | '(' exp ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | string        	{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+sepBy_rev(p, sep)
+  :                         { [] }
+  | sepBy_rev(p, sep) sep p { $3 : $1 }
 
+sepBy(p, sep)
+  : sepBy_rev(p, sep) { reverse $1 }
+
+exp :: { Exp L.Range }
+  : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
+  | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
+  | isChildOf atom 		{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  | nameEndsWith atom    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+
+atom :: { Exp L.Range }
+  : string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+  | '(' atom ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | '[' sepBy(atom, ',') ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
 {
 
 -- | Remove quote marks from a string

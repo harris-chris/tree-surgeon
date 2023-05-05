@@ -33,6 +33,9 @@ tokens :-
 -- Syntax
 <0> "("     		{ tok LPar }
 <0> ")"     		{ tok RPar }
+<0> "["     		{ tok LBrack }
+<0> "]"     		{ tok RBrack }
+<0> ","     		{ tok Comma }
 -- Values
 <0> \"[^\"]*\" 		{ tokString }
 -- Comments
@@ -82,6 +85,9 @@ data Token
   | String ByteString
   | LPar
   | RPar
+  | LBrack
+  | RBrack
+  | Comma
   | EOF
   | NameEndsWith
   deriving (Eq, Show)
