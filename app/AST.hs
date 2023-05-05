@@ -27,9 +27,11 @@ data Exp a =
 
 instance Show a => FiltersFsObjData (Exp a) where
     filterObjData (IsChildOf _ (EString _ x)) name objData = elem x $ parents objData
-    filterObjData (IsChildOf _ (EList z xs)) name objData =
+    filterObjData (IsChildOf _ (EList _ xs)) name objData =
         any (\(EString _ x) -> elem x $ parents objData) xs
     filterObjData (NameEndsWith _ (EString _ x)) name objData = isSuffixOf x name
+    filterObjData (NameEndsWith _ (EList _ xs)) name objData =
+        any (\(EString _ x) -> isSuffixOf x name) xs
     filterObjData (Or _ x y) name objData =
         (filterObjData x name objData) || (filterObjData y name objData)
     filterObjData (And _ x y) name objData =
