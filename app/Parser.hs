@@ -21,6 +21,7 @@ data HappyAbsSyn t6 t7
 	= HappyTerminal (L.RangedToken)
 	| HappyErrorToken Prelude.Int
 	| HappyAbsSyn4 (Exp L.Range)
+	| HappyAbsSyn5 (StringParam L.Range)
 	| HappyAbsSyn6 t6
 	| HappyAbsSyn7 t7
 
@@ -160,7 +161,7 @@ happyReduction_2 (HappyAbsSyn4  happy_var_3)
 happyReduction_2 _ _ _  = notHappyAtAll 
 
 happyReduce_3 = happySpecReduce_2  4 happyReduction_3
-happyReduction_3 (HappyAbsSyn4  happy_var_2)
+happyReduction_3 (HappyAbsSyn5  happy_var_2)
 	(HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
 		 (IsChildOf (L.rtRange happy_var_1 <-> info happy_var_2) happy_var_2
@@ -168,7 +169,7 @@ happyReduction_3 (HappyAbsSyn4  happy_var_2)
 happyReduction_3 _ _  = notHappyAtAll 
 
 happyReduce_4 = happySpecReduce_2  4 happyReduction_4
-happyReduction_4 (HappyAbsSyn4  happy_var_2)
+happyReduction_4 (HappyAbsSyn5  happy_var_2)
 	(HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
 		 (NameEndsWith (L.rtRange happy_var_1 <-> info happy_var_2) happy_var_2
@@ -186,17 +187,17 @@ happyReduction_5 _ _ _  = notHappyAtAll
 
 happyReduce_6 = happySpecReduce_1  5 happyReduction_6
 happyReduction_6 (HappyTerminal happy_var_1)
-	 =  HappyAbsSyn4
-		 (unTok happy_var_1 (\range (L.String str) -> EString range $ unQuote str)
+	 =  HappyAbsSyn5
+		 (unTok happy_var_1 (\range (L.String str) -> SString range $ unQuote str)
 	)
 happyReduction_6 _  = notHappyAtAll 
 
 happyReduce_7 = happySpecReduce_3  5 happyReduction_7
 happyReduction_7 (HappyTerminal happy_var_3)
-	(HappyAbsSyn4  happy_var_2)
+	(HappyAbsSyn5  happy_var_2)
 	(HappyTerminal happy_var_1)
-	 =  HappyAbsSyn4
-		 (EPar (L.rtRange happy_var_1 <-> L.rtRange happy_var_3) happy_var_2
+	 =  HappyAbsSyn5
+		 (SPar (L.rtRange happy_var_1 <-> L.rtRange happy_var_3) happy_var_2
 	)
 happyReduction_7 _ _ _  = notHappyAtAll 
 
@@ -204,8 +205,8 @@ happyReduce_8 = happySpecReduce_3  5 happyReduction_8
 happyReduction_8 (HappyTerminal happy_var_3)
 	(HappyAbsSyn6  happy_var_2)
 	(HappyTerminal happy_var_1)
-	 =  HappyAbsSyn4
-		 (EList (L.rtRange happy_var_1 <-> L.rtRange happy_var_3) happy_var_2
+	 =  HappyAbsSyn5
+		 (SList (L.rtRange happy_var_1 <-> L.rtRange happy_var_3) happy_var_2
 	)
 happyReduction_8 _ _ _  = notHappyAtAll 
 
@@ -222,7 +223,7 @@ happyReduction_10  =  HappyAbsSyn7
 	)
 
 happyReduce_11 = happySpecReduce_3  7 happyReduction_11
-happyReduction_11 (HappyAbsSyn4  happy_var_3)
+happyReduction_11 (HappyAbsSyn5  happy_var_3)
 	_
 	(HappyAbsSyn7  happy_var_1)
 	 =  HappyAbsSyn7

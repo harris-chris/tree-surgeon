@@ -55,10 +55,10 @@ exp :: { Exp L.Range }
   | nameEndsWith atom    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
 
-atom :: { Exp L.Range }
-  : string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
-  | '(' atom ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | '[' sepBy(atom, ',') ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
+atom :: { StringParam L.Range }
+  : string        		{ unTok $1 (\range (L.String str) -> SString range $ unQuote str) }
+  | '(' atom ')'		{ SPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | '[' sepBy(atom, ',') ']'  	{ SList (L.rtRange $1 <-> L.rtRange $3) $2 }
 {
 
 -- | Remove quote marks from a string
