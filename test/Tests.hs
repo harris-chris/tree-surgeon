@@ -26,9 +26,7 @@ treeB = Dir "b" [
     ]
 
 treeC :: DirTree ()
-treeC = Dir "c" [
-    File "file_c_1.cpp" ()
-    ]
+treeC = Dir "c" [ ]
 
 treeTestData :: DirTree ()
 treeTestData = Dir "test-data" [ treeA, treeB, treeC ]
@@ -45,7 +43,7 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA ]
             applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
         it "Correctly executes isChildOf [string]" $ do
-            let expected = Dir "test-data" [ treeA, treeC ]
+            let expected = Dir "test-data" [ treeA, treeB ]
             applyFilterWith testDataPath "isChildOf [\"a\", \"b\"]" ( compareToExpected expected )
         it "Correctly executes nameEndsWith" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
