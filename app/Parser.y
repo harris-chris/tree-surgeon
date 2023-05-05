@@ -28,6 +28,10 @@ import AST
 -- Syntax
   '('        	{ L.RangedToken L.LPar _ }
   ')'        	{ L.RangedToken L.RPar _ }
+-- List
+  '['        	{ L.RangedToken L.LBrack _ }
+  ']'        	{ L.RangedToken L.RBrack _ }
+  ','        	{ L.RangedToken L.Comma _ }
 -- Values
   string     	{ L.RangedToken (L.String _) _ }
 
@@ -38,14 +42,20 @@ import AST
 
 %%
 
-exp :: { Exp L.Range }
-  : exp '|' exp 	{ Or (info $1 <-> info $3) $1 $3 }
-  | exp '&' exp 	{ And (info $1 <-> info $3) $1 $3 }
-  | isChildOf exp 	{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
-  | nameEndsWith exp    { NameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | '(' exp ')'		{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | string        	{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+listParse(typ) :: { [Exp L.Range] }
+  : listParse(typ) ',' typ 	{ $3 : $1 }
+  | listParse(typ) ','		{ $1 }
+  | typ 			{ [ $1 ] }
+  | 		       		{ [] }
 
+exp :: { Exp L.Range }
+  : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
+  | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
+  | isChildOf exp 		{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+  | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
 {
 
 -- | Remove quote marks from a string

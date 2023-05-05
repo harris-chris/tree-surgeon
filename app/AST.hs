@@ -22,10 +22,13 @@ data Exp a =
     | And a (Exp a) (Exp a)
     | EPar a (Exp a)
     | EString a ByteString
+    | EList a [Exp a]
     deriving (Foldable, Show)
 
 instance Show a => FiltersFsObjData (Exp a) where
     filterObjData (IsChildOf _ (EString _ x)) name objData = elem x $ parents objData
+    filterObjData (IsChildOf _ (EList z xs)) name objData =
+        any (\(EString _ x) -> elem x $ parents objData) xs
     filterObjData (NameEndsWith _ (EString _ x)) name objData = isSuffixOf x name
     filterObjData (Or _ x y) name objData =
         (filterObjData x name objData) || (filterObjData y name objData)

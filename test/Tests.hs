@@ -39,9 +39,12 @@ compareToExpected expected actual =
 main :: IO ()
 main = hspec $ do
     describe "filterTree" $ do
-        it "Correctly executes isChildOf" $ do
+        it "Correctly executes isChildOf string" $ do
             let expected = Dir "test-data" [ treeA ]
             applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
+        it "Correctly executes isChildOf [string]" $ do
+            let expected = Dir "test-data" [ treeA, treeB ]
+            applyFilterWith testDataPath "isChildOf [\"a\", \"b\"]" ( compareToExpected expected )
         it "Correctly executes nameEndsWith" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
