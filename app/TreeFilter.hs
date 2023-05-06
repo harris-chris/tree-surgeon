@@ -2,6 +2,7 @@ module TreeFilter
   (
     filterDir
     , applyFilterWith
+    , TreeSurgeonException(..)
   ) where
 
 import Control.Exception
@@ -12,14 +13,6 @@ import System.Directory.Tree
 import AST
 import qualified Lexer as L
 import Parser (parseTreeSurgeon)
-
-data TreeSurgeonException
-    = Couldn'tParseExp String String
-
-instance Exception TreeSurgeonException
-instance Show TreeSurgeonException where
-    show (Couldn'tParseExp expStr errStr) =
-        "Error:\n" <> errStr <> "\nin expression:\n" <> expStr
 
 toElements :: AnchoredDirTree a -> DirTree FsObjData
 toElements (b :/ t) = toElements' [] t
@@ -39,10 +32,13 @@ applyFilterWith dirname filterStr ioF =
         Left errMsg -> throw $ Couldn'tParseExp (unpack filterStr) errMsg
         Right exp -> (filterTreeWith exp <$> treeIO') >>= ioF
 
-filterTreeFiles :: Show a => Exp a -> DirTree FsObjData -> Bool
-filterTreeFiles exp (File name objData) = filterObjData (trace ("exp = " ++ show exp) exp) (pack name) objData
-filterTreeFiles exp (Dir _ _) = True
-filterTreeFiles exp (Failed _ _) = True
+filterTreeFiles :: Show a => Exp a -> DirTree FsObjData -> Either TreeSurgeonException Bool
+filterTreeFiles exp (File name objData) =
+    case filterObjData exp (pack name) objData of
+        Left err -> err
+        Right
+filterTreeFiles exp (Dir _ _) = Right True
+filterTreeFiles exp (Failed _ _) = Right True
 
 filterTreeDirs :: DirTree FsObjData -> Bool
 filterTreeDirs (File _ _) = True
@@ -50,8 +46,8 @@ filterTreeDirs (Dir _ []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: Show a => Exp a -> DirTree FsObjData -> DirTree FsObjData
+filterTreeWith :: Show a => Exp a -> DirTree FsObjData -> Either TreeSurgeonException (DirTree FsObjData)
 filterTreeWith exp tree =
-    let filesFiltered = filterDir (filterTreeFiles exp) tree
-    in filterDir filterTreeDirs filesFiltered
+    let filesFilteredTree = filterDir (filterTreeFiles exp) tree
+    in filterDir filterTreeDirs filesFilteredTree
 

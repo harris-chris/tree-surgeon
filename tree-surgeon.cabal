@@ -41,6 +41,7 @@ executable tree-surgeon
     	              , TreeFilter
 
     other-extensions: OverloadedStrings
+                      , ScopedTypeVariables
     build-tool-depends:      alex:alex
                              , happy:happy
 
@@ -55,5 +56,6 @@ test-suite test
     		    	, test
     main-is:    	Tests.hs
     default-extensions:	OverloadedStrings
+                        , ScopedTypeVariables
     default-language: 	GHC2021
 
