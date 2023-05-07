@@ -84,5 +84,6 @@ isChildOf exp = Left $ IsChildOfNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
 nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ pack name
+nameMatchesWith f (EList _ exps) = matchersToMatcherWithAny (nameMatchesWith f) exps
 nameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
 
