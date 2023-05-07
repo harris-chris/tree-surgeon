@@ -69,8 +69,22 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
             applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" )" ( compareToExpected expected )
+        it "Correctly executes ( exp | exp | exp )" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' , treeB , treeC ]
+            applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" | nameEndsWith \".hs\" )" ( compareToExpected expected )
         it "Correctly executes exp & exp" $ do
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeB' ]
             applyFilterWith testDataPath "nameEndsWith \".cpp\" & isChildOf \"b\"" ( compareToExpected expected )
+        it "Correctly executes ( exp | exp ) &  exp" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
+            let expected = Dir "test-data" [ treeA' , treeB' ]
+            applyFilterWith testDataPath "( nameEndsWith \".cpp\" & ( isChildOf \"a\" | isChildOf \"b\" ) )" ( compareToExpected expected )
+        it "Correctly executes ( exp & exp ) | ( exp & exp )" $ do
+            let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
+            let treeB' = filterDir (\dt -> isSuffixOf ".hpp" $ pack $ name dt) treeB
+            let expected = Dir "test-data" [ treeA' , treeB' ]
+            applyFilterWith testDataPath "( nameEndsWith \".cpp\" & isChildOf \"a\" ) | ( nameEndsWith \".hpp\" & isChildOf \"b\" )" ( compareToExpected expected )
 
