@@ -14,8 +14,8 @@ import AST
 import qualified Lexer as L
 import Parser (parseTreeSurgeon)
 
-toElements :: AnchoredDirTree a -> DirTree FsObjData
-toElements (b :/ t) = toElements' [] t
+toElements :: DirTree a -> DirTree FsObjData
+toElements t = toElements' [] t
 
 toElements' :: [ByteString] -> DirTree a -> DirTree FsObjData
 toElements' parents (File name _) = File name (FileData parents)
@@ -26,28 +26,33 @@ toElements' _ (Failed name error) = Failed name error
 
 applyFilterWith :: FileName -> ByteString -> (DirTree FsObjData -> IO()) -> IO ()
 applyFilterWith dirname filterStr ioF =
-    let treeIO = readDirectoryWith return dirname
-        treeIO' = toElements <$> treeIO
-    in case L.runAlex filterStr parseTreeSurgeon of
-        Left errMsg -> throw $ Couldn'tParseExp (unpack filterStr) errMsg
-        Right exp -> (filterTreeWith exp <$> treeIO') >>= ioF
+    do
+        anchoredTree <- readDirectoryWith return dirname
+        let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
+        case filteredTreeE of
+            Left err -> throw $ err
+            Right filtered -> ioF filtered
 
-filterTreeFiles :: Show a => Exp a -> DirTree FsObjData -> Either TreeSurgeonException Bool
-filterTreeFiles exp (File name objData) =
-    case filterObjData exp (pack name) objData of
-        Left err -> err
-        Right
-filterTreeFiles exp (Dir _ _) = Right True
-filterTreeFiles exp (Failed _ _) = Right True
+filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
+filterTreeFilesWith f (File name objData) = f name objData
+filterTreeFilesWith _ _ = True
 
 filterTreeDirs :: DirTree FsObjData -> Bool
 filterTreeDirs (File _ _) = True
-filterTreeDirs (Dir _ []) = False
+filterTreeDirs (Dir name []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: Show a => Exp a -> DirTree FsObjData -> Either TreeSurgeonException (DirTree FsObjData)
-filterTreeWith exp tree =
-    let filesFilteredTree = filterDir (filterTreeFiles exp) tree
-    in filterDir filterTreeDirs filesFilteredTree
+filterTreeWith :: DirTree a -> ByteString -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith tree filterStr =
+    let expE = L.runAlex filterStr parseTreeSurgeon
+        expE' = (case expE of
+            Left errStr -> Left $ Couldn'tLex errStr
+            Right exprString -> Right exprString) :: Either TreeSurgeonException (Exp L.Range)
+        matcherE = expE' >>= getMatcher
+    in filterTreeWith' (toElements tree) <$> matcherE
+
+filterTreeWith' :: DirTree FsObjData -> Matcher -> DirTree FsObjData
+filterTreeWith' tree fileMatcher =
+    filterDir filterTreeDirs $ filterDir (filterTreeFilesWith fileMatcher) tree
 
