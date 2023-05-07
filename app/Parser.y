@@ -25,6 +25,7 @@ import AST
 -- Matchers
   isChildOf  	{ L.RangedToken L.IsChildOf _ }
   nameEndsWith  { L.RangedToken L.NameEndsWith _ }
+  nameContains  { L.RangedToken L.NameContains _ }
 -- Syntax
   '('        	{ L.RangedToken L.LPar _ }
   ')'        	{ L.RangedToken L.RPar _ }
@@ -39,6 +40,7 @@ import AST
 %left '&'
 %left isChildOf
 %left nameEndsWith
+%left nameContains
 
 %%
 
@@ -53,6 +55,7 @@ exp :: { Exp L.Range }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
   | isChildOf exp 		{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }

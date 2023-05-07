@@ -30,6 +30,7 @@ tokens :-
 -- Matchers
 <0> isChildOf		{ tok IsChildOf }
 <0> nameEndsWith        { tok NameEndsWith }
+<0> nameContains        { tok NameContains }
 -- Syntax
 <0> "("     		{ tok LPar }
 <0> ")"     		{ tok RPar }
@@ -88,6 +89,7 @@ data Token
   | RPar
   | EOF
   | NameEndsWith
+  | NameContains
   | LBrack
   | RBrack
   | Comma

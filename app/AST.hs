@@ -8,7 +8,9 @@ module AST
   ) where
 
 import Control.Exception
-import Data.ByteString.Lazy.Char8 (ByteString, pack, isSuffixOf)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
+import Data.ByteString.Char8 (isInfixOf)
 import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
@@ -48,6 +50,7 @@ class Show a => IsMatcher a where
 data Exp a =
     IsChildOf a (Exp a)
     | NameEndsWith a (Exp a)
+    | NameContains a (Exp a)
     | Or a (Exp a) (Exp a)
     | And a (Exp a) (Exp a)
     | EPar a (Exp a)
@@ -58,9 +61,10 @@ data Exp a =
 instance Show a => IsMatcher (Exp a) where
     getMatcher (IsChildOf _ exp) = isChildOf exp
     getMatcher (NameEndsWith _ exp) =
-        nameMatchesWith isSuffixOf exp
-    getMatcher (NameEndsWith _ (EList _ exps)) =
-        matchersToMatcherWithAny (nameMatchesWith isSuffixOf) exps
+        nameMatchesWith BS.isSuffixOf exp
+    getMatcher (NameContains _ exp) =
+        nameMatchesWith isInfixOf' exp
+        where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
@@ -87,7 +91,7 @@ isChildOf (EList _ exps) = matchersToMatcherWithAny isChildOf exps
 isChildOf exp = Left $ IsChildOfNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
-nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ pack name
+nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ BS.pack name
 nameMatchesWith f (EList _ exps) = matchersToMatcherWithAny (nameMatchesWith f) exps
 nameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
 
