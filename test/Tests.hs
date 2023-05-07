@@ -43,48 +43,63 @@ main = hspec $ do
     describe "filterTree" $ do
         it "Correctly executes isChildOf string" $ do
             let expected = Dir "test-data" [ treeA ]
-            applyFilterWith testDataPath "isChildOf \"a\"" ( compareToExpected expected )
+            let testStr = "isChildOf \"a\""
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes isChildOf [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
-            applyFilterWith testDataPath "isChildOf [\"a\", \"b\"]" ( compareToExpected expected )
+            let testStr = "isChildOf [\"a\", \"b\"]"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes nameEndsWith string" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            applyFilterWith testDataPath "nameEndsWith \".cpp\"" ( compareToExpected expected )
+            let testStr = "nameEndsWith \".cpp\""
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes nameEndsWith [string]" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let treeC' = filterDir (\dt -> isSuffixOf ".hs" $ pack $ name dt) treeC
             let expected = Dir "test-data" [ treeA' , treeB' , treeC' ]
-            applyFilterWith testDataPath "nameEndsWith [\".cpp\", \".hs\"]" ( compareToExpected expected )
+            let testStr = "nameEndsWith [\".cpp\", \".hs\"]"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes exp | exp" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
-            applyFilterWith testDataPath "nameEndsWith \".cpp\" | isChildOf \"b\"" ( compareToExpected expected )
+            let testStr = "nameEndsWith \".cpp\" | isChildOf \"b\""
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp )" $ do
             let expected = Dir "test-data" [ treeA ]
-            applyFilterWith testDataPath "(isChildOf \"a\")" ( compareToExpected expected )
+            let testStr = "(isChildOf \"a\")"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp | exp )" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
-            applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" )" ( compareToExpected expected )
+            let testStr = "( nameEndsWith \".cpp\" | isChildOf \"b\" )"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp | exp | exp )" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB , treeC ]
-            applyFilterWith testDataPath "( nameEndsWith \".cpp\" | isChildOf \"b\" | nameEndsWith \".hs\" )" ( compareToExpected expected )
+            let testStr = "( nameEndsWith \".cpp\" | isChildOf \"b\" | nameEndsWith \".hs\" )"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes exp & exp" $ do
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeB' ]
-            applyFilterWith testDataPath "nameEndsWith \".cpp\" & isChildOf \"b\"" ( compareToExpected expected )
+            let testStr = "nameEndsWith \".cpp\" & isChildOf \"b\""
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp | exp ) &  exp" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let treeB' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            applyFilterWith testDataPath "( nameEndsWith \".cpp\" & ( isChildOf \"a\" | isChildOf \"b\" ) )" ( compareToExpected expected )
+            let testStr = "( nameEndsWith \".cpp\" & ( isChildOf \"a\" | isChildOf \"b\" ) )"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp & exp ) | ( exp & exp )" $ do
             let treeA' = filterDir (\dt -> isSuffixOf ".cpp" $ pack $ name dt) treeA
             let treeB' = filterDir (\dt -> isSuffixOf ".hpp" $ pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            applyFilterWith testDataPath "( nameEndsWith \".cpp\" & isChildOf \"a\" ) | ( nameEndsWith \".hpp\" & isChildOf \"b\" )" ( compareToExpected expected )
+            let testStr = "( nameEndsWith \".cpp\" & isChildOf \"a\" ) | ( nameEndsWith \".hpp\" & isChildOf \"b\" )"
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
+        it "Errors if a bad string is passed" $ do
+            let testStr = "isNotAToken is not a valid expression"
+            applyFilterWith testDataPath testStr ( putStrLn . show ) `shouldThrow`
+                (== Couldn'tLex (show testStr))
 

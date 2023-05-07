@@ -18,16 +18,19 @@ type MatcherE a = Either TreeSurgeonException Matcher
 type NameMatcherFunc = (ByteString -> ByteString -> Bool)
 
 data TreeSurgeonException
-    = Couldn'tParseExp String String
+    = Couldn'tParse String
     | Couldn'tLex String
     | NameMatcherNeedsString String
     | IsChildOfNeedsString String
+    deriving (Eq)
 
 instance Exception TreeSurgeonException
 
 instance Show TreeSurgeonException where
-    show (Couldn'tParseExp expStr errStr) =
-        "Error:\n" <> errStr <> "\nin expression:\n" <> expStr
+    show (Couldn'tLex expStr) =
+        "Error in expression:\n" <> expStr
+    show (Couldn'tParse expStr) =
+        "Error in expression:\n" <> expStr
     show (NameMatcherNeedsString exp) =
         "Error:\n" <> (show exp) <>
         "\nname matching functions must be passed string or list of strings"
@@ -69,6 +72,7 @@ instance Show a => IsMatcher (Exp a) where
             (Left err, _) -> Left err
             (_, Right err) -> Right err
     getMatcher (EPar _ x) = getMatcher x
+    getMatcher exp = Left $ Couldn'tParse $ show exp
 
 matchersToMatcherWithAny :: (Exp a -> MatcherE a) -> [Exp a] -> MatcherE a
 matchersToMatcherWithAny f exps =
