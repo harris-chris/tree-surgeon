@@ -4,6 +4,7 @@ import Test.Hspec
 
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.ByteString.Char8 as BS
+import Data.Maybe
 import Debug.Trace (trace, traceShowId)
 import System.FilePath
 import System.Directory.Tree
@@ -18,6 +19,9 @@ treeA :: DirTree ()
 treeA = Dir "a" [
     File "file_a_1.cpp" ()
     , File "file_a_2.hpp" ()
+    , Dir "docs" [
+        File "docs.md" ()
+        ]
     ]
 
 treeB :: DirTree ()
@@ -29,7 +33,16 @@ treeB = Dir "b" [
 treeC :: DirTree ()
 treeC = Dir "c" [
     File "file_c_1.hs" ()
+    , Dir "ext" [
+        File "binary" ()
+        ]
     ]
+
+filterOutDirs :: DirTree () -> DirTree ()
+filterOutDirs (Dir name contents) = Dir name (catMaybes $ filterContents <$> contents)
+    where filterContents (Dir _ _) = Nothing
+          filterContents f = Just f
+filterOutDirs _ = error "Can only filter directory"
 
 treeTestData :: DirTree ()
 treeTestData = Dir "test-data" [ treeA, treeB, treeC ]
@@ -61,6 +74,11 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeB' ]
             let testStr = "nameContains \"file_b\""
             applyFilterWith testDataPath testStr ( compareToExpected expected )
+        it "Correctly executes nameStartsWith [string]" $ do
+            let treeB' = filterDir (\dt -> BS.isInfixOf "file_b" (BS.pack $ name dt)) treeB
+            let expected = Dir "test-data" [ treeB' ]
+            let testStr = "nameContains \"file_b\""
+            applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes nameEndsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
@@ -84,7 +102,8 @@ main = hspec $ do
             applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes ( exp | exp | exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
-            let expected = Dir "test-data" [ treeA' , treeB , treeC ]
+            let treeC' = filterOutDirs treeC
+            let expected = Dir "test-data" [ treeA' , treeB , treeC' ]
             let testStr = "( nameEndsWith \".cpp\" | isChildOf \"b\" | nameEndsWith \".hs\" )"
             applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes exp & exp" $ do

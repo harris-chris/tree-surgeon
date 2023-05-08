@@ -7,6 +7,7 @@ module TreeFilter
 
 import Control.Exception
 import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack)
+import Data.Maybe
 import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
@@ -37,6 +38,16 @@ filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
 filterTreeFilesWith f (File name objData) = f name objData
 filterTreeFilesWith _ _ = True
 
+filterTreeDirs' :: DirTree FsObjData -> Maybe (DirTree FsObjData)
+filterTreeDirs' f@(File _ _) = Just f
+filterTreeDirs' f@(Failed _ _) = Just f
+filterTreeDirs' (Dir name contents) =
+    let filtered = filterTreeDirs' <$> contents
+        hasContents = any isJust filtered
+    in if hasContents
+        then Just $ Dir name $ catMaybes filtered
+        else Nothing
+
 filterTreeDirs :: DirTree FsObjData -> Bool
 filterTreeDirs (File _ _) = True
 filterTreeDirs (Dir name []) = False
@@ -50,9 +61,15 @@ filterTreeWith tree filterStr =
             Left errStr -> Left $ Couldn'tLex errStr
             Right exprString -> Right exprString) :: Either TreeSurgeonException (Exp L.Range)
         matcherE = expE' >>= getMatcher
-    in filterTreeWith' (toElements tree) <$> matcherE
+    in matcherE >>= filterTreeWith' (toElements tree)
 
-filterTreeWith' :: DirTree FsObjData -> Matcher -> DirTree FsObjData
-filterTreeWith' tree fileMatcher =
-    filterDir filterTreeDirs $ filterDir (filterTreeFilesWith fileMatcher) tree
-
+-- Check that it is indeed a dir
+-- Then apply filterTreeDirs' to the contents
+-- Then get rid of the Nothings
+filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith' tree@(Dir name _) fileMatcher =
+    let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree
+        filteredContents = filterTreeDirs' <$> (contents filesFiltered)
+    in Right $ Dir name (catMaybes filteredContents)
+filterTreeWith' (File name _) _ = Left $ CanOnlyFilterDirectory name
+filterTreeWith' (Failed name _) _ = Left $ CanOnlyFilterDirectory name

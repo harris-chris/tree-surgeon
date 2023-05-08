@@ -24,6 +24,7 @@ data TreeSurgeonException
     | Couldn'tLex String
     | NameMatcherNeedsString String
     | IsChildOfNeedsString String
+    | CanOnlyFilterDirectory String
     deriving (Eq)
 
 instance Exception TreeSurgeonException
@@ -39,6 +40,9 @@ instance Show TreeSurgeonException where
     show (IsChildOfNeedsString exp) =
         "Error:\n" <> (show exp) <>
         "\nisChildOf must be passed string or list of strings"
+    show (CanOnlyFilterDirectory fpath) =
+        "Error: unable to filter " <> (show fpath) <>
+        "; it is a file, not a directory"
 
 data FsObjData =
     FileData { parents :: [ByteString] }
