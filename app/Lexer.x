@@ -29,6 +29,7 @@ tokens :-
 <0> "&"			{ tok And }
 -- Matchers
 <0> isChildOf		{ tok IsChildOf }
+<0> nameStartsWith      { tok NameStartsWith }
 <0> nameEndsWith        { tok NameEndsWith }
 <0> nameContains        { tok NameContains }
 -- Syntax
@@ -89,6 +90,7 @@ data Token
   | RPar
   | EOF
   | NameEndsWith
+  | NameStartsWith
   | NameContains
   | LBrack
   | RBrack

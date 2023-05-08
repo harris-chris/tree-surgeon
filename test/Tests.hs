@@ -75,9 +75,9 @@ main = hspec $ do
             let testStr = "nameContains \"file_b\""
             applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes nameStartsWith [string]" $ do
-            let treeB' = filterDir (\dt -> BS.isInfixOf "file_b" (BS.pack $ name dt)) treeB
-            let expected = Dir "test-data" [ treeB' ]
-            let testStr = "nameContains \"file_b\""
+            let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "nameStartsWith \"docs\""
             applyFilterWith testDataPath testStr ( compareToExpected expected )
         it "Correctly executes nameEndsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA

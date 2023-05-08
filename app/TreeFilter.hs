@@ -63,9 +63,6 @@ filterTreeWith tree filterStr =
         matcherE = expE' >>= getMatcher
     in matcherE >>= filterTreeWith' (toElements tree)
 
--- Check that it is indeed a dir
--- Then apply filterTreeDirs' to the contents
--- Then get rid of the Nothings
 filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
 filterTreeWith' tree@(Dir name _) fileMatcher =
     let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree

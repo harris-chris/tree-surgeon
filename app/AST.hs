@@ -53,6 +53,7 @@ class Show a => IsMatcher a where
 
 data Exp a =
     IsChildOf a (Exp a)
+    | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
     | Or a (Exp a) (Exp a)
@@ -64,6 +65,8 @@ data Exp a =
 
 instance Show a => IsMatcher (Exp a) where
     getMatcher (IsChildOf _ exp) = isChildOf exp
+    getMatcher (NameStartsWith _ exp) =
+        nameMatchesWith BS.isPrefixOf exp
     getMatcher (NameEndsWith _ exp) =
         nameMatchesWith BS.isSuffixOf exp
     getMatcher (NameContains _ exp) =
