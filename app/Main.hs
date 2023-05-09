@@ -19,8 +19,8 @@ main = tsFilter =<< execParser opts
 
 tsFilter :: CliOptions -> IO ()
 tsFilter (CliOptions target filterStr) =
-    let f = putStrLn . (showTree "" True)
-    in applyFilterWith target (BS.pack filterStr) f
+    let f = \x y -> putStrLn $ showTreeComparison x y
+    in applyFilterWithComparative target (BS.pack filterStr) f
 
 data CliOptions = CliOptions
   { target     :: String

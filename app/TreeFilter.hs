@@ -2,6 +2,7 @@ module TreeFilter
   (
     filterDir
     , applyFilterWith
+    , applyFilterWithComparative
     , TreeSurgeonException(..)
   ) where
 
@@ -33,6 +34,15 @@ applyFilterWith dirname filterStr ioF =
         case filteredTreeE of
             Left err -> throw $ err
             Right filtered -> ioF filtered
+
+applyFilterWithComparative :: FileName -> ByteString -> (DirTree FsObjData -> DirTree FsObjData -> IO()) -> IO ()
+applyFilterWithComparative dirname filterStr ioF =
+    do
+        anchoredTree <- readDirectoryWith return dirname
+        let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
+        case filteredTreeE of
+            Left err -> throw $ err
+            Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
 filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
 filterTreeFilesWith f (File name objData) = f name objData

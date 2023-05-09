@@ -46,7 +46,7 @@ instance Show TreeSurgeonException where
 
 data FsObjData =
     FileData { parents :: [ByteString] }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 class Show a => IsMatcher a where
     getMatcher :: a -> MatcherE a
