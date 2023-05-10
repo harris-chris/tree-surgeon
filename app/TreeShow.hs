@@ -25,16 +25,19 @@ substituteJoiner joiner str =
 lastJoiner :: Char
 lastJoiner = '└'
 
-showTree :: String -> Bool -> DirTree a -> String
-showTree prelimStr isLast (Dir name contents) =
+showTree :: DirTree a -> String
+showTree tree = showTree' "" True tree
+
+showTree' :: String -> Bool -> DirTree a -> String
+showTree' prelimStr isLast (Dir name contents) =
     let joiner = if isLast then '└' else '├'
         thisLineStr = substituteJoiner joiner prelimStr <> setDirFormat name
         prelimStr' = prelimStr <> "│  "
-        subLines = showTree prelimStr' False <$> (init contents)
+        subLines = showTree' prelimStr' False <$> (init contents)
         lastPrelimStr = prelimStr <> singleInd
-        lastLine = showTree lastPrelimStr True (last contents)
+        lastLine = showTree' lastPrelimStr True (last contents)
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
-showTree prelimStr isLast (File name _) =
+showTree' prelimStr isLast (File name _) =
     let joiner = if isLast then '└' else '├'
         thisLineStr = substituteJoiner joiner prelimStr <> name
     in thisLineStr
