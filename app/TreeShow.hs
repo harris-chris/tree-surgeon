@@ -6,6 +6,7 @@ module TreeShow
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.List
+import Debug.Trace
 import System.Console.ANSI
 import System.Directory.Tree
 
@@ -18,9 +19,9 @@ crossJoiner = '├'
 substituteJoiner :: Char -> String -> String
 substituteJoiner joiner str =
     let indWidth = length singleInd
-    in if length str > 0
+    in if length str > 1
         then take (length str - indWidth) str <> (joiner:"──")
-        else ""
+        else str
 
 lastJoiner :: Char
 lastJoiner = '└'
@@ -45,8 +46,10 @@ showTree' prelimStr isLast (File name _) =
 data Status = Present | Removed
 
 setStatusPrefix :: Status -> String -> String
-setStatusPrefix Present prelimStr = ' ':(tail prelimStr)
-setStatusPrefix Removed prelimStr = setRed "-" <> (tail prelimStr)
+setStatusPrefix Present prelimStr =
+    if length prelimStr > 0 then ' ':(tail prelimStr) else " "
+setStatusPrefix Removed prelimStr =
+    if length prelimStr > 0 then setRed "-" <> (tail prelimStr) else setRed "-"
 
 setDirFormat :: String -> String
 setDirFormat dirName =
@@ -56,7 +59,11 @@ setDirFormat dirName =
     <> setSGRCode [Reset]
 
 setRed :: String -> String
-setRed str = setSGRCode [SetColor Foreground Vivid Red] <> str <> setSGRCode [Reset]
+setRed str =
+    setSGRCode [SetConsoleIntensity BoldIntensity]
+    <> setSGRCode [SetColor Foreground Vivid Red]
+    <> str
+    <> setSGRCode [Reset]
 
 type Zipped a = [(Bool, Maybe (DirTree a), DirTree a)]
 
@@ -81,7 +88,7 @@ showTreeComparison' :: Ord a => Maybe String -> Bool -> Maybe (DirTree a) -> Dir
 showTreeComparison' Nothing isLast treeM tree =
     let tree' = sortDir tree
         treeM' = sortDir <$> treeM
-        prelimStr = Just " "
+        prelimStr = Just ""
     in showTreeComparison' prelimStr isLast treeM' tree'
 showTreeComparison' (Just prelimStr) isLast (Just (File name' _)) (File name _) =
     let joiner = if isLast then '└' else '├'
@@ -95,7 +102,7 @@ showTreeComparison' (Just prelimStr) isLast (Just (Dir name' contents')) (Dir na
     let joiner = if isLast then '└' else '├'
         prelimStr' = setStatusPrefix Present prelimStr
         thisLineStr = substituteJoiner joiner prelimStr' <> setDirFormat name
-        zippedContents = zipContents contents contents' []
+        zippedContents = zipContents contents' contents []
         prelimStr'' = prelimStr' <> "│  "
         subLines = (uncurry3 $ (showTreeComparison' (Just prelimStr''))) <$> (init zippedContents)
         lastPrelimStr = prelimStr' <> singleInd
@@ -103,8 +110,9 @@ showTreeComparison' (Just prelimStr) isLast (Just (Dir name' contents')) (Dir na
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
 showTreeComparison' (Just prelimStr) isLast Nothing (Dir name contents) =
     let joiner = if isLast then '└' else '├'
-        prelimStr' = setStatusPrefix Present prelimStr
-        thisLineStr = substituteJoiner joiner prelimStr' <> setDirFormat name
+        prelimStr' = setStatusPrefix Removed prelimStr
+        thisLineStr = setStatusPrefix Removed $
+            substituteJoiner joiner prelimStr' <> setDirFormat name
         prelimStr'' = prelimStr' <> "│  "
         subLines = showTreeComparison' (Just prelimStr'') False Nothing <$> (init contents)
         lastPrelimStr = prelimStr' <> singleInd
