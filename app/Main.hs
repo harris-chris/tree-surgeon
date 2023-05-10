@@ -18,23 +18,21 @@ main = tsFilter =<< execParser opts
      <> header "hello - a test for optparse-applicative" )
 
 tsFilter :: CliOptions -> IO ()
-tsFilter (CliOptions (ShowTree Comparative) target filterStr) =
+tsFilter (CliOptions target filterStr (ShowTree True)) =
     let f = \x y -> putStrLn $ showTreeComparison x y
     in applyFilterWithComparative target (BS.pack filterStr) f
-tsFilter (CliOptions (ShowTree FilteredOnly) target filterStr) =
+tsFilter (CliOptions target filterStr (ShowTree False)) =
     let f = putStrLn . showTree
     in applyFilterWith target (BS.pack filterStr) f
-tsFilter (CliOptions (ToBashArray Include) target filterStr) =
+tsFilter (CliOptions target filterStr (ToBashArray Include)) =
     putStrLn "Bash array include"
-tsFilter (CliOptions (ToBashArray Exclude) target filterStr) =
+tsFilter (CliOptions target filterStr (ToBashArray Exclude)) =
     putStrLn "Bash array exclude"
 
-data ShowTreeType = Comparative | FilteredOnly
-
-showTreeTypeParser :: Parser ShowTreeType
-showTreeTypeParser = comparativeParser <|> filteredOnlyParser
-     where comparativeParser = flag' Comparative (long "comparative")
-           filteredOnlyParser = flag' FilteredOnly (long "filtered-only")
+showTreeTypeParser :: Parser Bool
+showTreeTypeParser = switch (
+    long "diff" <> help "Show diff between original tree and filtered tree"
+    )
 
 data IncludeExclude = Include | Exclude
 
@@ -44,12 +42,12 @@ inclExclParser = includeParser <|> excludeParser
            excludeParser = flag' Exclude (long "exclude")
 
 data CliOptions = CliOptions
-    { optCommand :: Command
-    , targetDir :: String
-    , filterStr :: String }
+    { targetDir :: String
+    , filterStr :: String
+    , optCommand :: Command }
 
 data Command
-    = ShowTree ShowTreeType
+    = ShowTree Bool
     | ToBashArray IncludeExclude
 
 showTreeParser :: Parser Command
@@ -59,19 +57,21 @@ toBashArrayParser :: Parser Command
 toBashArrayParser = ToBashArray <$> inclExclParser
 
 commandSubParser = subparser
-    ( command "show-tree" (info showTreeParser ( progDesc "Add a file to the repository" ))
-   <> command "to-bash-array" (info toBashArrayParser ( progDesc "Record changes to the repository" ))
+    ( command "show-tree" (
+        info showTreeParser ( progDesc "Add a file to the repository" ))
+    <> command "to-bash-array" (info toBashArrayParser ( progDesc "Record changes to the repository" ))
+    <> command "to-bash-array" (info toBashArrayParser ( progDesc "Record changes to the repository" ))
     )
 
 cliOptsParser :: Parser CliOptions
 cliOptsParser = CliOptions
-    <$> commandSubParser
-    <*> argument str
+    <$> argument str
         ( metavar "TARGET"
-        <> help "Target directory" )
+        <> help "The directory on which to filter" )
     <*> argument str
         ( metavar "FILTER"
-        <> help "The filter to apply" )
+        <> help "The filter string to apply" )
+    <*> commandSubParser
 
 
 
