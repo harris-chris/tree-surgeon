@@ -60,19 +60,28 @@ setDirFormat dirName =
 
 setRed :: String -> String
 setRed str =
-    setSGRCode [SetConsoleIntensity BoldIntensity]
-    <> setSGRCode [SetColor Foreground Vivid Red]
+    setSGRCode [SetColor Foreground Vivid Red]
     <> str
     <> setSGRCode [Reset]
 
 type Zipped a = [(Bool, Maybe (DirTree a), DirTree a)]
 
+-- Note that this is sensitive to order - the original comes first, then the filtered
+isFilteredOf :: Eq a => DirTree a -> DirTree a -> Bool
+isFilteredOf f@(File _ _) f'@(File _ _) = f == f'
+isFilteredOf (Dir name contents) (Dir name' contents') =
+    let areContentsSubset = intersect contents' contents == contents'
+    in name == name' && areContentsSubset
+isFilteredOf _ _ = False
+
+-- The contents are going to be different, if a directory; so we just want to check
+-- parents and name
 zipContents :: Eq a => [DirTree a] -> [DirTree a] -> Zipped a -> Zipped a
 zipContents (x':[])  (x:[]) zipped = zipContents [] [] $ (True, Just x', x):zipped
 zipContents [] (x:[]) zipped = zipContents [] [] $ (True, Nothing, x):zipped
 zipContents [] (x:xs) zipped = zipContents [] xs $ (False, Nothing, x):zipped
 zipContents (x':xs') (x:xs) zipped =
-    if x' == x
+    if isFilteredOf x x'
         then zipContents xs' xs $ (False, Just x', x):zipped
         else zipContents (x':xs') xs $ (False, Nothing, x):zipped
 zipContents _ [] zipped = reverse zipped
@@ -80,11 +89,11 @@ zipContents _ [] zipped = reverse zipped
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
 
-showTreeComparison :: Ord a => DirTree a -> DirTree a -> String
+showTreeComparison :: (Ord a, Show a) => DirTree a -> DirTree a -> String
 showTreeComparison original filtered =
     showTreeComparison' Nothing True (Just filtered) original
 
-showTreeComparison' :: Ord a => Maybe String -> Bool -> Maybe (DirTree a) -> DirTree a -> String
+showTreeComparison' :: (Ord a, Show a) => Maybe String -> Bool -> Maybe (DirTree a) -> DirTree a -> String
 showTreeComparison' Nothing isLast treeM tree =
     let tree' = sortDir tree
         treeM' = sortDir <$> treeM
@@ -110,12 +119,11 @@ showTreeComparison' (Just prelimStr) isLast (Just (Dir name' contents')) (Dir na
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
 showTreeComparison' (Just prelimStr) isLast Nothing (Dir name contents) =
     let joiner = if isLast then '└' else '├'
-        prelimStr' = setStatusPrefix Removed prelimStr
         thisLineStr = setStatusPrefix Removed $
-            substituteJoiner joiner prelimStr' <> setDirFormat name
-        prelimStr'' = prelimStr' <> "│  "
-        subLines = showTreeComparison' (Just prelimStr'') False Nothing <$> (init contents)
-        lastPrelimStr = prelimStr' <> singleInd
+            substituteJoiner joiner prelimStr <> setRed name
+        prelimStr' = prelimStr <> "│  "
+        subLines = showTreeComparison' (Just prelimStr') False Nothing <$> (init contents)
+        lastPrelimStr = prelimStr <> singleInd
         lastLine = showTreeComparison' (Just lastPrelimStr) True Nothing (last contents)
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
 
