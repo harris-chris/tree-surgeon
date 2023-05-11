@@ -25,7 +25,8 @@ tsFilter (CliOptions target filterStr (ShowTree False)) =
     let f = putStrLn . showTree
     in applyFilterWith target (BS.pack filterStr) f
 tsFilter (CliOptions target filterStr (ToBashArray Include)) =
-    putStrLn "Bash array include"
+    let f = putStrLn . toBashArray
+    in applyFilterWith target (BS.pack filterStr) f
 tsFilter (CliOptions target filterStr (ToBashArray Exclude)) =
     putStrLn "Bash array exclude"
 

@@ -2,6 +2,7 @@ module TreeShow
   (
     showTree
     , showTreeComparison
+    , toBashArray
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
@@ -9,6 +10,7 @@ import Data.List
 import Debug.Trace
 import System.Console.ANSI
 import System.Directory.Tree
+import System.FilePath
 
 singleInd :: String
 singleInd = "   "
@@ -126,4 +128,17 @@ showTreeComparison' (Just prelimStr) isLast Nothing (Dir name contents) =
         lastPrelimStr = prelimStr <> singleInd
         lastLine = showTreeComparison' (Just lastPrelimStr) True Nothing (last contents)
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
+
+toBashArray :: DirTree a -> String
+toBashArray tree =
+    let allFiles = toBashArray' "." tree
+    in unwords allFiles
+
+toBashArray' :: FileName -> DirTree a -> [FileName]
+toBashArray' path (Dir name contents) =
+    let path' = path </> name
+        contentsArrays = toBashArray' path' <$> contents
+        contentsFlattened = concat contentsArrays
+    in path':contentsFlattened
+toBashArray' path (File name _) = [path </> name]
 
