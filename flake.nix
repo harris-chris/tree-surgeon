@@ -24,9 +24,6 @@
             packages = p: [ treeSurgeon ];
             withHoogle = true;
             buildInputs = with pkgs; with pkgs.haskellPackages; [
-              # haskell-language-server
-              # haskell.compiler.ghc924
-              # ghcid
               cabal-install
               happy
               alex

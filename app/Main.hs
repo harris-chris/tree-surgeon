@@ -2,6 +2,7 @@ module Main where
 
 import Options.Applicative
 import qualified Data.ByteString.Lazy.Char8 as BS
+import System.Directory.Tree
 
 import Cli
 import Lexer
@@ -18,15 +19,21 @@ main = tsFilter =<< execParser opts
      <> header "Tree surgeon: A utility for filtering and manipulating file trees" )
 
 tsFilter :: CliOptions -> IO ()
-tsFilter (CliOptions target filterStr (ShowTree True)) =
-    let f = \x y -> putStrLn $ showTreeComparison x y
-    in applyFilterWithComparative target (BS.pack filterStr) f
-tsFilter (CliOptions target filterStr (ShowTree False)) =
+tsFilter (ShowFilteredTree filterStr source) =
     let f = putStrLn . showTree
-    in applyFilterWith target (BS.pack filterStr) f
-tsFilter (CliOptions target filterStr (ToBashArray Include)) =
+    in applyFilterWith source (BS.pack filterStr) f
+tsFilter (ShowDiffTree filterStr source) =
+    let f = \x y -> putStrLn $ showTreeComparison x y
+    in applyFilterWithComparative source (BS.pack filterStr) f
+tsFilter (ToBashArray filterStr source) =
     let f = putStrLn . toBashArray
-    in applyFilterWith target (BS.pack filterStr) f
-tsFilter (CliOptions target filterStr (ToBashArray Exclude)) =
-    putStrLn "Bash array exclude"
+    in applyFilterWith source (BS.pack filterStr) f
+tsFilter (WriteFilteredTree filterStr source destination) =
+    let f = \t -> writeDirectory $ destination :/ t
+    in applyFilterWith source (BS.pack filterStr) f
+-- tsFilter (CliOptions target filterStr (ToBashArray Include)) =
+--     let f = putStrLn . toBashArray
+--     in applyFilterWith target (BS.pack filterStr) f
+-- tsFilter (CliOptions target filterStr (ToBashArray Exclude)) =
+--     putStrLn "Bash array exclude"
 
