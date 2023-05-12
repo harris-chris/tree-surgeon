@@ -1,4 +1,4 @@
-module TreeShow
+module Output
   (
     showTree
     , showTreeComparison
@@ -44,6 +44,7 @@ showTree' prelimStr isLast (File name _) =
     let joiner = if isLast then '└' else '├'
         thisLineStr = substituteJoiner joiner prelimStr <> name
     in thisLineStr
+showTree' prelimStr isLast (Failed _ _) = ""
 
 data Status = Present | Removed
 
@@ -77,7 +78,7 @@ isFilteredOf (Dir name contents) (Dir name' contents') =
 isFilteredOf _ _ = False
 
 -- The contents are going to be different, if a directory; so we just want to check
--- parents and name
+-- parents and name, not contents; hence the use of isFilteredOf rather than ==
 zipContents :: Eq a => [DirTree a] -> [DirTree a] -> Zipped a -> Zipped a
 zipContents (x':[])  (x:[]) zipped = zipContents [] [] $ (True, Just x', x):zipped
 zipContents [] (x:[]) zipped = zipContents [] [] $ (True, Nothing, x):zipped

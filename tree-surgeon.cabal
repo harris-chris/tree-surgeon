@@ -41,7 +41,8 @@ executable tree-surgeon
     	              , Parser
     	              , AST
     	              , TreeFilter
-    	              , TreeShow
+    	              , Output
+    	              , Cli
 
     other-extensions: OverloadedStrings
                       , ScopedTypeVariables
