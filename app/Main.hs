@@ -27,7 +27,7 @@ applyFuncWithFile filePath filterFunc =
 tsFilter :: CliOptions -> IO ()
 tsFilter (ShowFilteredTree fltr source) =
     let applyFilterF = putStrLn . showTree
-        f = applyFilterWith source applyFilterF
+        f = applyFilterWith source applyFilterF Include
     in case fltr of
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f
@@ -37,9 +37,9 @@ tsFilter (ShowDiffTree fltr source) =
     in case fltr of
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f
-tsFilter (ToBashArray fltr source) =
+tsFilter (ToBashArray fltr source includedNotExcluded) =
     let applyFilterF = putStrLn . toBashArray
-        f = applyFilterWith source applyFilterF
+        f = applyFilterWith source applyFilterF includedNotExcluded
     in case fltr of
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f

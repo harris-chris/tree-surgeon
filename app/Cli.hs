@@ -6,6 +6,8 @@ module Cli (
 import Options.Applicative
 import Data.Semigroup ((<>))
 
+import TreeFilter
+
 data CliOptions
     = ShowFilteredTree
         { filter :: Either String String
@@ -15,7 +17,8 @@ data CliOptions
         , source :: String }
     | ToBashArray
         { filter :: Either String String
-        , source :: String }
+        , source :: String
+        , inclExcl :: InclExcl }
     | WriteFilteredTree
         { filter :: Either String String
         , source :: String
@@ -51,7 +54,13 @@ showDiffTree :: Parser CliOptions
 showDiffTree = ShowDiffTree <$> filterStrArg <*> sourceDirArg
 
 toBash :: Parser CliOptions
-toBash = ToBashArray <$> filterStrArg <*> sourceDirArg
+toBash = ToBashArray <$> filterStrArg <*> sourceDirArg <*> excludedArg
+
+excludedArg :: Parser InclExcl
+excludedArg = (\a -> if a then Exclude else Include) <$> (switch
+    $ long "excluded"
+    <> short 'e'
+    <> help "Output excluded, rather than included, files")
 
 filterStrArg :: Parser (Either String String)
 filterStrArg =
