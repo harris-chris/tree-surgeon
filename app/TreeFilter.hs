@@ -26,8 +26,8 @@ toElements' parents (Dir name contents) =
     in Dir name contents'
 toElements' _ (Failed name error) = Failed name error
 
-applyFilterWith :: FileName -> ByteString -> (DirTree FsObjData -> IO()) -> IO ()
-applyFilterWith dirname filterStr ioF =
+applyFilterWith :: FileName -> (DirTree FsObjData -> IO()) -> ByteString -> IO ()
+applyFilterWith dirname ioF filterStr  =
     do
         anchoredTree <- readDirectoryWith return dirname
         let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
@@ -35,8 +35,8 @@ applyFilterWith dirname filterStr ioF =
             Left err -> throw $ err
             Right filtered -> ioF filtered
 
-applyFilterWithComparative :: FileName -> ByteString -> (DirTree FsObjData -> DirTree FsObjData -> IO()) -> IO ()
-applyFilterWithComparative dirname filterStr ioF =
+applyFilterWithComparative :: FileName -> (DirTree FsObjData -> DirTree FsObjData -> IO()) -> ByteString -> IO ()
+applyFilterWithComparative dirname ioF filterStr =
     do
         anchoredTree <- readDirectoryWith return dirname
         let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr

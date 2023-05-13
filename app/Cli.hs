@@ -8,16 +8,16 @@ import Data.Semigroup ((<>))
 
 data CliOptions
     = ShowFilteredTree
-        { filter :: String
+        { filter :: Either String String
         , source :: String }
     | ShowDiffTree
-        { filter :: String
+        { filter :: Either String String
         , source :: String }
     | ToBashArray
-        { filter :: String
+        { filter :: Either String String
         , source :: String }
     | WriteFilteredTree
-        { filter :: String
+        { filter :: Either String String
         , source :: String
         , destination :: String }
     deriving (Show)
@@ -53,10 +53,17 @@ showDiffTree = ShowDiffTree <$> filterStrArg <*> sourceDirArg
 toBash :: Parser CliOptions
 toBash = ToBashArray <$> filterStrArg <*> sourceDirArg
 
-filterStrArg :: Parser String
+filterStrArg :: Parser (Either String String)
 filterStrArg =
-  strOption
-    (long "filter" <> short 'f' <> metavar "FILTER" <> help "Filter to apply to folder")
+    (Left <$> strOption
+        (long "filter"
+        <> short 'f'
+        <> metavar "FILTER STRING"
+        <> help "Filter to apply to folder")
+    <|>) (Right <$> strOption
+        (long "file"
+        <> metavar "FILTER FILE"
+        <> help "File that contains filter to apply to folder"))
 
 sourceDirArg :: Parser String
 sourceDirArg =
