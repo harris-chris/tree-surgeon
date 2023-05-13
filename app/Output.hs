@@ -3,6 +3,7 @@ module Output
     showTree
     , showTreeComparison
     , toBashArray
+    , flattenedToBashArray
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
@@ -129,6 +130,12 @@ showTreeComparison' (Just prelimStr) isLast Nothing (Dir name contents) =
         lastPrelimStr = prelimStr <> singleInd
         lastLine = showTreeComparison' (Just lastPrelimStr) True Nothing (last contents)
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
+
+flattenedToBashArray :: [DirTree a] -> String
+flattenedToBashArray trees =
+    let fnames = name <$> trees
+        paths = ("." </>) <$> fnames
+    in unwords paths
 
 toBashArray :: DirTree a -> String
 toBashArray tree =

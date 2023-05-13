@@ -18,7 +18,7 @@ data CliOptions
     | ToBashArray
         { filter :: Either String String
         , source :: String
-        , inclExcl :: InclExcl }
+        , exclude :: Bool }
     | WriteFilteredTree
         { filter :: Either String String
         , source :: String
@@ -56,11 +56,11 @@ showDiffTree = ShowDiffTree <$> filterStrArg <*> sourceDirArg
 toBash :: Parser CliOptions
 toBash = ToBashArray <$> filterStrArg <*> sourceDirArg <*> excludedArg
 
-excludedArg :: Parser InclExcl
-excludedArg = (\a -> if a then Exclude else Include) <$> (switch
+excludedArg :: Parser Bool
+excludedArg = switch
     $ long "excluded"
     <> short 'e'
-    <> help "Output excluded, rather than included, files")
+    <> help "Output excluded, rather than included, files"
 
 filterStrArg :: Parser (Either String String)
 filterStrArg =

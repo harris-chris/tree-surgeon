@@ -1,10 +1,10 @@
 module TreeFilter
   (
     filterDir
+    , getExcluded
     , applyFilterWith
     , applyFilterWithComparative
     , TreeSurgeonException(..)
-    , InclExcl(..)
   ) where
 
 import Control.Exception
@@ -17,9 +17,6 @@ import AST
 import qualified Lexer as L
 import Parser (parseTreeSurgeon)
 
-data InclExcl = Include | Exclude
-    deriving Show
-
 toElements :: DirTree a -> DirTree FsObjData
 toElements t = toElements' [] t
 
@@ -30,11 +27,11 @@ toElements' parents (Dir name contents) =
     in Dir name contents'
 toElements' _ (Failed name error) = Failed name error
 
-applyFilterWith :: FileName -> (DirTree FsObjData -> IO()) -> InclExcl -> ByteString -> IO ()
-applyFilterWith dirname ioF inclExcl filterStr  =
+applyFilterWith :: FileName -> (DirTree FsObjData -> IO()) -> ByteString -> IO ()
+applyFilterWith dirname ioF filterStr  =
     do
         anchoredTree <- readDirectoryWith return dirname
-        let filteredTreeE = filterTreeWith (dirTree anchoredTree) inclExcl filterStr
+        let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
         case filteredTreeE of
             Left err -> throw $ err
             Right filtered -> ioF filtered
@@ -43,16 +40,20 @@ applyFilterWithComparative :: FileName -> (DirTree FsObjData -> DirTree FsObjDat
 applyFilterWithComparative dirname ioF filterStr =
     do
         anchoredTree <- readDirectoryWith return dirname
-        let filteredTreeE = filterTreeWith (dirTree anchoredTree) Include filterStr
+        let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
         case filteredTreeE of
             Left err -> throw $ err
             Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
-filterTreeFilesWith :: Matcher -> InclExcl -> DirTree FsObjData -> Bool
-filterTreeFilesWith f Include (File name objData) = f name objData
-filterTreeFilesWith f Exclude (File name objData) = not $ f name objData
-filterTreeFilesWith _ Include _ = True
-filterTreeFilesWith _ Exclude _ = False
+getExcluded :: DirTree FsObjData -> DirTree FsObjData -> [DirTree FsObjData]
+getExcluded origTree filteredTree =
+    let flattenedOrig = flattenDir origTree
+        flattenedFiltered = flattenDir filteredTree
+    in filter (\z -> not $ elem z flattenedFiltered) flattenedOrig
+
+filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
+filterTreeFilesWith f (File name objData) = f name objData
+filterTreeFilesWith _ _ = True
 
 filterTreeDirs' :: DirTree FsObjData -> Maybe (DirTree FsObjData)
 filterTreeDirs' f@(File _ _) = Just f
@@ -64,27 +65,25 @@ filterTreeDirs' (Dir name contents) =
         then Just $ Dir name $ catMaybes filtered
         else Nothing
 
-filterTreeDirs :: InclExcl -> DirTree FsObjData -> Bool
-filterTreeDirs _ (File _ _) = True
-filterTreeDirs Include (Dir name []) = False
-filterTreeDirs Exclude (Dir name []) = True
-filterTreeDirs Include (Dir _ (c:cx)) = True
-filterTreeDirs Exclude (Dir _ (c:cx)) = False
-filterTreeDirs _ (Failed _ _) = True
+filterTreeDirs :: DirTree FsObjData -> Bool
+filterTreeDirs (File _ _) = True
+filterTreeDirs (Dir name []) = False
+filterTreeDirs (Dir _ (c:cx)) = True
+filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: DirTree a -> InclExcl -> ByteString -> Either TreeSurgeonException (DirTree FsObjData)
-filterTreeWith tree inclExcl filterStr =
+filterTreeWith :: DirTree a -> ByteString -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith tree filterStr =
     let expE = L.runAlex filterStr parseTreeSurgeon
         expE' = (case expE of
             Left errStr -> Left $ Couldn'tLex errStr
             Right exprString -> Right exprString) :: Either TreeSurgeonException (Exp L.Range)
         matcherE = expE' >>= getMatcher
-    in matcherE >>= filterTreeWith' (toElements tree) inclExcl
+    in matcherE >>= filterTreeWith' (toElements tree)
 
-filterTreeWith' :: DirTree FsObjData -> InclExcl -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
-filterTreeWith' tree@(Dir name _) inclExcl fileMatcher =
-    let filesFiltered = filterDir (filterTreeFilesWith fileMatcher inclExcl) tree
+filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith' tree@(Dir name _) fileMatcher =
+    let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree
         filteredContents = filterTreeDirs' <$> (contents filesFiltered)
     in Right $ Dir name (catMaybes filteredContents)
-filterTreeWith' (File name _) _ _ = Left $ CanOnlyFilterDirectory name
-filterTreeWith' (Failed name _) _ _ = Left $ CanOnlyFilterDirectory name
+filterTreeWith' (File name _) _ = Left $ CanOnlyFilterDirectory name
+filterTreeWith' (Failed name _) _ = Left $ CanOnlyFilterDirectory name
