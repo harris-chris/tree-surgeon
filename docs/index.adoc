@@ -1,1 +1,4 @@
-## Index page
+= Tree Surgeon
+:toc:
+
+#### Take the xref:language_tour.adoc#[language tour]
