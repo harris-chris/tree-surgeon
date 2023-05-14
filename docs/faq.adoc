@@ -1,0 +1,5 @@
+## Occasionally Asked Questions
+
+#### Why does tree surgeon filter files, but not directories?
+
+
