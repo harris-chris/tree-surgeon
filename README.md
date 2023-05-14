@@ -1,6 +1,6 @@
 ![Documentation](https://github.com/harris-chris/tree-surgeon/actions/workflows/Documentation.yml/badge.svg)
 
-View in [Github Pages](https://harris-chris.github.io/tree-surgeon/)
+View [the full documentation](https://harris-chris.github.io/tree-surgeon/)
 
 ## Tree surgeon
 

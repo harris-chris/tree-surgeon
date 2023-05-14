@@ -1,0 +1,8 @@
+## Language tour
+
+#### Tree surgeon filters can be thought of as functions
+Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter can be thought of as a function that takes a single argument - a file - and returns a boolean value, to indicate whether the file should be included or not.
+
+xref:faq.adoc#why-not-directories[Why does tree-surgeon not filter on directories as well as files?]
+
+
