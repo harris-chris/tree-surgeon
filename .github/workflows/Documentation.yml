@@ -31,3 +31,5 @@ jobs:
         # slides_build: true
         # pre_build:
         # post_build:
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
