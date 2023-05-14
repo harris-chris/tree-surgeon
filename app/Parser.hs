@@ -98,7 +98,7 @@ happyExpList = Happy_Data_Array.listArray (0,45) ([12160,48641,1540,57344,32843,
 {-# NOINLINE happyExpListPerState #-}
 happyExpListPerState st =
     token_strs_expected
-  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","exp","listParse__exp__","'|'","'&'","isChildOf","nameStartsWith","nameEndsWith","nameContains","'('","')'","'['","']'","','","string","%eof"]
+  where token_strs = ["error","%dummy","%start_parseTreeSurgeon","exp","listParse__exp__","'|'","'&'","ancestorNameIs","nameStartsWith","nameEndsWith","nameContains","'('","')'","'['","']'","','","string","%eof"]
         bit_start = st Prelude.* 18
         bit_end = (st Prelude.+ 1) Prelude.* 18
         read_bit = readArrayBit happyExpList
@@ -286,7 +286,7 @@ happyReduce_3 = happySpecReduce_2  4 happyReduction_3
 happyReduction_3 (HappyAbsSyn4  happy_var_2)
 	(HappyTerminal happy_var_1)
 	 =  HappyAbsSyn4
-		 (IsChildOf (L.rtRange happy_var_1 <-> info happy_var_2) happy_var_2
+		 (AncestorNameIs (L.rtRange happy_var_1 <-> info happy_var_2) happy_var_2
 	)
 happyReduction_3 _ _  = notHappyAtAll 
 
@@ -375,7 +375,7 @@ happyNewToken action sts stk
 	L.RangedToken L.EOF _ -> action 18 18 tk (HappyState action) sts stk;
 	L.RangedToken L.Or _ -> cont 6;
 	L.RangedToken L.And _ -> cont 7;
-	L.RangedToken L.IsChildOf _ -> cont 8;
+	L.RangedToken L.AncestorNameIs _ -> cont 8;
 	L.RangedToken L.NameStartsWith _ -> cont 9;
 	L.RangedToken L.NameEndsWith _ -> cont 10;
 	L.RangedToken L.NameContains _ -> cont 11;

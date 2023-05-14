@@ -23,7 +23,7 @@ import AST
   '|'        	{ L.RangedToken L.Or _ }
   '&'		{ L.RangedToken L.And _ }
 -- Matchers
-  isChildOf  		{ L.RangedToken L.IsChildOf _ }
+  ancestorNameIs  		{ L.RangedToken L.AncestorNameIs _ }
   nameStartsWith  	{ L.RangedToken L.NameStartsWith _ }
   nameEndsWith  	{ L.RangedToken L.NameEndsWith _ }
   nameContains  	{ L.RangedToken L.NameContains _ }
@@ -39,7 +39,7 @@ import AST
 
 %left '|'
 %left '&'
-%left isChildOf
+%left ancestorNameIs
 %left nameEndsWith
 %left nameContains
 %left nameStartsWith
@@ -55,7 +55,7 @@ listParse(typ) :: { [Exp L.Range] }
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
-  | isChildOf exp 		{ IsChildOf (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameIs exp 		{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }

@@ -23,7 +23,7 @@ data TreeSurgeonException
     = Couldn'tParse String
     | Couldn'tLex String
     | NameMatcherNeedsString String
-    | IsChildOfNeedsString String
+    | AncestorNameIsNeedsString String
     | CanOnlyFilterDirectory String
     deriving (Eq)
 
@@ -37,9 +37,9 @@ instance Show TreeSurgeonException where
     show (NameMatcherNeedsString exp) =
         "Error:\n" <> (show exp) <>
         "\nname matching functions must be passed string or list of strings"
-    show (IsChildOfNeedsString exp) =
+    show (AncestorNameIsNeedsString exp) =
         "Error:\n" <> (show exp) <>
-        "\nisChildOf must be passed string or list of strings"
+        "\nancestorNameIs must be passed string or list of strings"
     show (CanOnlyFilterDirectory fpath) =
         "Error: unable to filter " <> (show fpath) <>
         "; it is a file, not a directory"
@@ -52,7 +52,7 @@ class Show a => IsMatcher a where
     getMatcher :: a -> MatcherE a
 
 data Exp a =
-    IsChildOf a (Exp a)
+    AncestorNameIs a (Exp a)
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
@@ -64,7 +64,7 @@ data Exp a =
     deriving (Foldable, Show)
 
 instance Show a => IsMatcher (Exp a) where
-    getMatcher (IsChildOf _ exp) = isChildOf exp
+    getMatcher (AncestorNameIs _ exp) = ancestorNameIs exp
     getMatcher (NameStartsWith _ exp) =
         nameMatchesWith BS.isPrefixOf exp
     getMatcher (NameEndsWith _ exp) =
@@ -92,10 +92,10 @@ matchersToMatcherWithAny f exps =
         matchersToMatcherF = \matchers -> (\n d -> any (\f -> f n d) matchers)
     in matchersToMatcherF <$> eitherListMatcher
 
-isChildOf :: Show a => Exp a -> Either TreeSurgeonException Matcher
-isChildOf (EString _ x) = Right $ \_ objData -> elem x $ parents objData
-isChildOf (EList _ exps) = matchersToMatcherWithAny isChildOf exps
-isChildOf exp = Left $ IsChildOfNeedsString $ show exp
+ancestorNameIs :: Show a => Exp a -> Either TreeSurgeonException Matcher
+ancestorNameIs (EString _ x) = Right $ \_ objData -> elem x $ parents objData
+ancestorNameIs (EList _ exps) = matchersToMatcherWithAny ancestorNameIs exps
+ancestorNameIs exp = Left $ AncestorNameIsNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
 nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ BS.pack name

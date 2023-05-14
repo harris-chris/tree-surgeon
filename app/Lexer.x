@@ -28,7 +28,7 @@ tokens :-
 <0> "|"			{ tok Or }
 <0> "&"			{ tok And }
 -- Matchers
-<0> isChildOf		{ tok IsChildOf }
+<0> ancestorNameIs	{ tok AncestorNameIs }
 <0> nameStartsWith      { tok NameStartsWith }
 <0> nameEndsWith        { tok NameEndsWith }
 <0> nameContains        { tok NameContains }
@@ -84,7 +84,7 @@ tokString inp@(_, _, str, _) len =
 data Token
   = Or
   | And
-  | IsChildOf
+  | AncestorNameIs
   | String ByteString
   | LPar
   | RPar

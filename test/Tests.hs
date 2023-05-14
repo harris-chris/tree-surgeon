@@ -55,13 +55,13 @@ compareToExpected expected actual =
 main :: IO ()
 main = hspec $ do
     describe "filterTree" $ do
-        it "Correctly executes isChildOf string" $ do
+        it "Correctly executes ancestorNameIs string" $ do
             let expected = Dir "test-data" [ treeA ]
-            let testStr = "isChildOf \"a\""
+            let testStr = "ancestorNameIs \"a\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes isChildOf [string]" $ do
+        it "Correctly executes ancestorNameIs [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
-            let testStr = "isChildOf [\"a\", \"b\"]"
+            let testStr = "ancestorNameIs [\"a\", \"b\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameEndsWith string" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -89,39 +89,39 @@ main = hspec $ do
         it "Correctly executes exp | exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
-            let testStr = "nameEndsWith \".cpp\" | isChildOf \"b\""
+            let testStr = "nameEndsWith \".cpp\" | ancestorNameIs \"b\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ( exp )" $ do
             let expected = Dir "test-data" [ treeA ]
-            let testStr = "(isChildOf \"a\")"
+            let testStr = "(ancestorNameIs \"a\")"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ( exp | exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
-            let testStr = "( nameEndsWith \".cpp\" | isChildOf \"b\" )"
+            let testStr = "( nameEndsWith \".cpp\" | ancestorNameIs \"b\" )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ( exp | exp | exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeC' = filterOutDirs treeC
             let expected = Dir "test-data" [ treeA' , treeB , treeC' ]
-            let testStr = "( nameEndsWith \".cpp\" | isChildOf \"b\" | nameEndsWith \".hs\" )"
+            let testStr = "( nameEndsWith \".cpp\" | ancestorNameIs \"b\" | nameEndsWith \".hs\" )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes exp & exp" $ do
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeB' ]
-            let testStr = "nameEndsWith \".cpp\" & isChildOf \"b\""
+            let testStr = "nameEndsWith \".cpp\" & ancestorNameIs \"b\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ( exp | exp ) &  exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            let testStr = "( nameEndsWith \".cpp\" & ( isChildOf \"a\" | isChildOf \"b\" ) )"
+            let testStr = "( nameEndsWith \".cpp\" & ( ancestorNameIs \"a\" | ancestorNameIs \"b\" ) )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ( exp & exp ) | ( exp & exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".hpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            let testStr = "( nameEndsWith \".cpp\" & isChildOf \"a\" ) | ( nameEndsWith \".hpp\" & isChildOf \"b\" )"
+            let testStr = "( nameEndsWith \".cpp\" & ancestorNameIs \"a\" ) | ( nameEndsWith \".hpp\" & ancestorNameIs \"b\" )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         -- it "Errors if a bad string is passed" $ do
         --     let testStr = "isNotAToken is not a valid expression"
