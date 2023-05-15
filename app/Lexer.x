@@ -32,6 +32,7 @@ tokens :-
 <0> nameStartsWith      { tok NameStartsWith }
 <0> nameEndsWith        { tok NameEndsWith }
 <0> nameContains        { tok NameContains }
+<0> nameIs        	{ tok NameIs }
 -- Syntax
 <0> "("     		{ tok LPar }
 <0> ")"     		{ tok RPar }
@@ -92,6 +93,7 @@ data Token
   | NameEndsWith
   | NameStartsWith
   | NameContains
+  | NameIs
   | LBrack
   | RBrack
   | Comma

@@ -54,7 +54,18 @@ compareToExpected expected actual =
 
 main :: IO ()
 main = hspec $ do
-    describe "filterTree" $ do
+    describe "Basic Functions" $ do
+        it "Correctly executes nameIs string" $ do
+            let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "nameIs \"file_a_2.hpp\""
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes nameIs [string]" $ do
+            let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
+            let treeB' = filterDir (\dt -> (name dt) == "file_b_1.cpp" ) treeB
+            let expected = Dir "test-data" [ treeA' , treeB' ]
+            let testStr = "nameIs [\"file_a_2.hpp\", \"file_b_1.cpp\"]"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameIs string" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "ancestorNameIs \"a\""

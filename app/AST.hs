@@ -56,6 +56,7 @@ data Exp a =
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
+    | NameIs a (Exp a)
     | Or a (Exp a) (Exp a)
     | And a (Exp a) (Exp a)
     | EPar a (Exp a)
@@ -72,6 +73,8 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (NameContains _ exp) =
         nameMatchesWith isInfixOf' exp
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
+    getMatcher (NameIs _ exp) =
+        nameMatchesWith (==) exp
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
