@@ -53,6 +53,7 @@ class Show a => IsMatcher a where
 
 data Exp a =
     AncestorNameIs a (Exp a)
+    | AncestorNameStartsWith a (Exp a)
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
@@ -65,7 +66,10 @@ data Exp a =
     deriving (Foldable, Show)
 
 instance Show a => IsMatcher (Exp a) where
-    getMatcher (AncestorNameIs _ exp) = ancestorNameIs exp
+    getMatcher (AncestorNameIs _ exp) =
+        ancestorNameMatchesWith (==) exp
+    getMatcher (AncestorNameStartsWith _ exp) =
+        ancestorNameMatchesWith BS.isPrefixOf exp
     getMatcher (NameStartsWith _ exp) =
         nameMatchesWith BS.isPrefixOf exp
     getMatcher (NameEndsWith _ exp) =
@@ -95,10 +99,17 @@ matchersToMatcherWithAny f exps =
         matchersToMatcherF = \matchers -> (\n d -> any (\f -> f n d) matchers)
     in matchersToMatcherF <$> eitherListMatcher
 
-ancestorNameIs :: Show a => Exp a -> Either TreeSurgeonException Matcher
-ancestorNameIs (EString _ x) = Right $ \_ objData -> elem x $ parents objData
-ancestorNameIs (EList _ exps) = matchersToMatcherWithAny ancestorNameIs exps
-ancestorNameIs exp = Left $ AncestorNameIsNeedsString $ show exp
+ancestorNameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
+ancestorNameMatchesWith f (EString _ x) =
+    Right $ \name fsObj -> any (f x) (parents fsObj)
+ancestorNameMatchesWith f (EList _ exps) =
+    matchersToMatcherWithAny (ancestorNameMatchesWith f) exps
+ancestorNameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
+
+-- ancestorNameIs :: Show a => Exp a -> Either TreeSurgeonException Matcher
+-- ancestorNameIs (EString _ x) = Right $ \_ objData -> elem x $ parents objData
+-- ancestorNameIs (EList _ exps) = matchersToMatcherWithAny ancestorNameIs exps
+-- ancestorNameIs exp = Left $ AncestorNameIsNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
 nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ BS.pack name

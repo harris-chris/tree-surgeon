@@ -23,27 +23,28 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 tokens :-
 
-<0> $white+ 		{ skip }
+<0> $white+ 			{ skip }
 -- Operators
-<0> "|"			{ tok Or }
-<0> "&"			{ tok And }
+<0> "|"				{ tok Or }
+<0> "&"				{ tok And }
 -- Matchers
-<0> ancestorNameIs	{ tok AncestorNameIs }
-<0> nameStartsWith      { tok NameStartsWith }
-<0> nameEndsWith        { tok NameEndsWith }
-<0> nameContains        { tok NameContains }
-<0> nameIs        	{ tok NameIs }
+<0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
+<0> ancestorNameIs		{ tok AncestorNameIs }
+<0> nameStartsWith      	{ tok NameStartsWith }
+<0> nameEndsWith        	{ tok NameEndsWith }
+<0> nameContains        	{ tok NameContains }
+<0> nameIs        		{ tok NameIs }
 -- Syntax
-<0> "("     		{ tok LPar }
-<0> ")"     		{ tok RPar }
+<0> "("     			{ tok LPar }
+<0> ")"     			{ tok RPar }
 -- List
-<0> "["     		{ tok LBrack }
-<0> "]"     		{ tok RBrack }
-<0> ","     		{ tok Comma }
+<0> "["     			{ tok LBrack }
+<0> "]"     			{ tok RBrack }
+<0> ","     			{ tok Comma }
 -- Values
-<0> \"[^\"]*\" 		{ tokString }
+<0> \"[^\"]*\" 			{ tokString }
 -- Comments
-<0> "--" .*\n 		{ skip }
+<0> "--" .*\n 			{ skip }
 
 {
 -- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.
@@ -86,6 +87,7 @@ data Token
   = Or
   | And
   | AncestorNameIs
+  | AncestorNameStartsWith
   | String ByteString
   | LPar
   | RPar

@@ -20,27 +20,29 @@ import AST
 
 %token
 -- Operators
-  '|'        	{ L.RangedToken L.Or _ }
-  '&'		{ L.RangedToken L.And _ }
+  '|'        			{ L.RangedToken L.Or _ }
+  '&'				{ L.RangedToken L.And _ }
 -- Matchers
   ancestorNameIs  		{ L.RangedToken L.AncestorNameIs _ }
-  nameStartsWith  	{ L.RangedToken L.NameStartsWith _ }
-  nameEndsWith  	{ L.RangedToken L.NameEndsWith _ }
-  nameContains  	{ L.RangedToken L.NameContains _ }
-  nameIs  	{ L.RangedToken L.NameIs _ }
+  ancestorNameStartsWith 	{ L.RangedToken L.AncestorNameStartsWith _ }
+  nameStartsWith  		{ L.RangedToken L.NameStartsWith _ }
+  nameEndsWith  		{ L.RangedToken L.NameEndsWith _ }
+  nameContains  		{ L.RangedToken L.NameContains _ }
+  nameIs  			{ L.RangedToken L.NameIs _ }
 -- Syntax
-  '('        	{ L.RangedToken L.LPar _ }
-  ')'        	{ L.RangedToken L.RPar _ }
+  '('        			{ L.RangedToken L.LPar _ }
+  ')'        			{ L.RangedToken L.RPar _ }
 -- List
-  '['        	{ L.RangedToken L.LBrack _ }
-  ']'        	{ L.RangedToken L.RBrack _ }
-  ','        	{ L.RangedToken L.Comma _ }
+  '['        			{ L.RangedToken L.LBrack _ }
+  ']'        			{ L.RangedToken L.RBrack _ }
+  ','        			{ L.RangedToken L.Comma _ }
 -- Values
-  string     	{ L.RangedToken (L.String _) _ }
+  string     			{ L.RangedToken (L.String _) _ }
 
 %left '|'
 %left '&'
 %left ancestorNameIs
+%left ancestorNameStartsWith
 %left nameEndsWith
 %left nameContains
 %left nameStartsWith
@@ -58,6 +60,7 @@ exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
   | ancestorNameIs exp 		{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }
