@@ -8,20 +8,20 @@ xref:faq.adoc#why-not-directories[Why does tree-surgeon not filter on directorie
 == Sub-expressions can be linked with & and |
 This main expression can be composed of sub-expressions, linked via `&` (and) and `|` (or) operators. For example:
 [source,haskell]
----
 nameIs "this" | nameIs "that"
----
-Will include any files that have a filename of "this", or any files that have the filename of "that". As shown shortly, this can also be expressed as `nameIs ["this" "that"]`.
+
+Will include any files that have a filename of "this", or any files that have the filename of "that".
+[sidebar]
+As shown shortly, this can also be expressed as `nameIs ["this", "that"]`.
 
 Conversely,
 [source,haskell]
----
 nameStartsWith "src" & nameEndsWith "cpp"
----
+
 Will include only files that have a filename that _starts_with "src", and ends with "cpp"; so
 - `srcFile.cpp`
 - `srcMain.cpp`
-but not
+but *not*
 - `Main.cpp`
 - `srcFile`
 

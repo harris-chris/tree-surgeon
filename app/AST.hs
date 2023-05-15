@@ -54,10 +54,12 @@ class Show a => IsMatcher a where
 data Exp a =
     AncestorNameIs a (Exp a)
     | AncestorNameStartsWith a (Exp a)
+    | AncestorNameEndsWith a (Exp a)
+    | AncestorNameContains a (Exp a)
+    | NameIs a (Exp a)
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
-    | NameIs a (Exp a)
     | Or a (Exp a) (Exp a)
     | And a (Exp a) (Exp a)
     | EPar a (Exp a)
@@ -70,6 +72,13 @@ instance Show a => IsMatcher (Exp a) where
         ancestorNameMatchesWith (==) exp
     getMatcher (AncestorNameStartsWith _ exp) =
         ancestorNameMatchesWith BS.isPrefixOf exp
+    getMatcher (AncestorNameEndsWith _ exp) =
+        ancestorNameMatchesWith BS.isSuffixOf exp
+    getMatcher (AncestorNameContains _ exp) =
+        ancestorNameMatchesWith isInfixOf' exp
+        where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
+    getMatcher (NameIs _ exp) =
+        nameMatchesWith (==) exp
     getMatcher (NameStartsWith _ exp) =
         nameMatchesWith BS.isPrefixOf exp
     getMatcher (NameEndsWith _ exp) =
@@ -77,8 +86,6 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (NameContains _ exp) =
         nameMatchesWith isInfixOf' exp
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
-    getMatcher (NameIs _ exp) =
-        nameMatchesWith (==) exp
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
@@ -105,11 +112,6 @@ ancestorNameMatchesWith f (EString _ x) =
 ancestorNameMatchesWith f (EList _ exps) =
     matchersToMatcherWithAny (ancestorNameMatchesWith f) exps
 ancestorNameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
-
--- ancestorNameIs :: Show a => Exp a -> Either TreeSurgeonException Matcher
--- ancestorNameIs (EString _ x) = Right $ \_ objData -> elem x $ parents objData
--- ancestorNameIs (EList _ exps) = matchersToMatcherWithAny ancestorNameIs exps
--- ancestorNameIs exp = Left $ AncestorNameIsNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
 nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ BS.pack name

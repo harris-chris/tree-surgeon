@@ -25,10 +25,12 @@ import AST
 -- Matchers
   ancestorNameIs  		{ L.RangedToken L.AncestorNameIs _ }
   ancestorNameStartsWith 	{ L.RangedToken L.AncestorNameStartsWith _ }
+  ancestorNameEndsWith 		{ L.RangedToken L.AncestorNameEndsWith _ }
+  ancestorNameContains 		{ L.RangedToken L.AncestorNameContains _ }
+  nameIs  			{ L.RangedToken L.NameIs _ }
   nameStartsWith  		{ L.RangedToken L.NameStartsWith _ }
   nameEndsWith  		{ L.RangedToken L.NameEndsWith _ }
   nameContains  		{ L.RangedToken L.NameContains _ }
-  nameIs  			{ L.RangedToken L.NameIs _ }
 -- Syntax
   '('        			{ L.RangedToken L.LPar _ }
   ')'        			{ L.RangedToken L.RPar _ }
@@ -43,10 +45,12 @@ import AST
 %left '&'
 %left ancestorNameIs
 %left ancestorNameStartsWith
+%left ancestorNameEndsWith
+%left ancestorNameContains
+%left nameIs
+%left nameStartsWith
 %left nameEndsWith
 %left nameContains
-%left nameStartsWith
-%left nameIs
 
 %%
 
@@ -61,10 +65,12 @@ exp :: { Exp L.Range }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
   | ancestorNameIs exp 		{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameEndsWith exp  	{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameContains exp  	{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
+  | nameIs exp 			{ NameIs (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }
-  | nameIs exp 			{ NameIs (L.rtRange $1 <-> info $2) $2 }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }

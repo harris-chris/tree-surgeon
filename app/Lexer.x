@@ -28,12 +28,14 @@ tokens :-
 <0> "|"				{ tok Or }
 <0> "&"				{ tok And }
 -- Matchers
-<0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
 <0> ancestorNameIs		{ tok AncestorNameIs }
+<0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
+<0> ancestorNameEndsWith	{ tok AncestorNameEndsWith }
+<0> ancestorNameContains	{ tok AncestorNameContains }
+<0> nameIs        		{ tok NameIs }
 <0> nameStartsWith      	{ tok NameStartsWith }
 <0> nameEndsWith        	{ tok NameEndsWith }
 <0> nameContains        	{ tok NameContains }
-<0> nameIs        		{ tok NameIs }
 -- Syntax
 <0> "("     			{ tok LPar }
 <0> ")"     			{ tok RPar }
@@ -88,14 +90,16 @@ data Token
   | And
   | AncestorNameIs
   | AncestorNameStartsWith
+  | AncestorNameEndsWith
+  | AncestorNameContains
+  | NameIs
+  | NameStartsWith
+  | NameEndsWith
+  | NameContains
   | String ByteString
   | LPar
   | RPar
   | EOF
-  | NameEndsWith
-  | NameStartsWith
-  | NameContains
-  | NameIs
   | LBrack
   | RBrack
   | Comma
