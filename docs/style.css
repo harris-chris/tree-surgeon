@@ -22,19 +22,19 @@ img {
 
 /* This changes the font size of the main header of the whole document */
 h1{
-    font-size:32px;
+    font-size:8px;
 }
 
 /* This changes font size and style of the header of each section eg: 1.*/
 h2{
-    font-size: 20px;
+    font-size: 6px;
     font-style: italic;
 }
 
 /* This changes size and font of the subheader of each header of each section
 eg: 1.1 */
 h3{
-font-size: 16px;
+font-size: 4px;
 font-family: "Open Sans","DejaVu Sans",sans-serif;
 font-style: normal;
 }
