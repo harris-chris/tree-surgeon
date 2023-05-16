@@ -1,4 +1,4 @@
 = Tree Surgeon
 :toc:
 
-#### Take the xref:language_tour.adoc#[language tour]
+== Take the xref:language_tour.adoc#[language tour]

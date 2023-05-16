@@ -27,6 +27,7 @@
               cabal-install
               happy
               alex
+              asciidoctor
             ];
           shellHook = "command -v fish &> /dev/null && fish";
           };
