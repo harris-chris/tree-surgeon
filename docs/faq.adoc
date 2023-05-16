@@ -1,6 +1,6 @@
-== Occasionally Asked Questions
+= Occasionally Asked Questions
 
-==== [[why-not-directories]]Why does tree surgeon filter files, but not directories?
+== [[why-not-directories]]Why does tree surgeon filter files, but not directories?
 Filtering on both files and directories means that some intermediationg has to occur between the directory-level filtering and the file-level filtering. For example, what should happen if a file has been set to be included, but its directory has not? To avoid dealing with this kind of situation, tree-surgeon filters by files only. This then determines which directories are included/excluded: any directory with an included file is itself included, and empty directories are excluded. This is behaviour consistent with version control systems such as git or mercurial.
 
 

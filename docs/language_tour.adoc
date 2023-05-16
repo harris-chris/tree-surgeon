@@ -1,16 +1,22 @@
 = Language tour
 
-== Tree surgeon filters can be thought of as functions
-Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter can be thought of as a function that takes a single argument - a file - and returns a boolean value, to indicate whether the file should be included or not.
+== Tree surgeon expressions can be thought of as functions
+Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where True indicates that the file should be included.
 
 xref:faq.adoc#why-not-directories[Why does tree-surgeon not filter on directories as well as files?]
+
+An example of a very simple expression is:
+[source,haskell]
+nameIs "includeMe.txt"
+
+Which tells tree surgeon to include any file named `includeMe.txt`. Tree surgeon will traverse the whole of the directory tree you specify, and for all files, test whether they match this expression. So in this case, any file named `includeMe.txt`, at any depth of the directory tree, will be included.
 
 == Sub-expressions can be linked with & and |
 This main expression can be composed of sub-expressions, linked via `&` (and) and `|` (or) operators. For example:
 [source,haskell]
 nameIs "this" | nameIs "that"
 
-Will include any files that have a filename of "this", or any files that have the filename of "that".
+Will include any files that have a filename of "this", *or* any files that have the filename of "that".
 [sidebar]
 As shown shortly, this can also be expressed as `nameIs ["this", "that"]`.
 
@@ -19,10 +25,10 @@ Conversely,
 nameStartsWith "src" & nameEndsWith "cpp"
 
 Will include only files that have a filename that _starts_with "src", and ends with "cpp"; so
-- `srcFile.cpp`
-- `srcMain.cpp`
+* `srcFile.cpp`
+* `srcMain.cpp`
 but *not*
-- `Main.cpp`
-- `srcFile`
+* `Main.cpp`
+* `srcFile`
 
 

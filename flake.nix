@@ -15,8 +15,28 @@
           inherit system;
           overlays = [ overlay ];
         };
+        createDocumentationLocally = pkgs.writeShellApplication {
+          name = "create_documentation_locally";
+          runtimeInputs = with pkgs; [ asciidoctor ];
+          text = ''
+            if [[ "$(basename "$(pwd)")" != "tree-surgeon" ]]; then
+                echo "Please run from root folder"
+                exit 1
+            else
+                rm -rf docs_test
+                mkdir docs_test
+                asciidoctor -a docinfo=shared -D docs_test '**/*.adoc'
+            fi
+          '';
+        };
       in
       {
+        apps = {
+          create_documentation_locally = {
+            type = "app";
+            program = "${createDocumentationLocally}/bin/create_documentation_locally";
+          };
+        };
         packages = { tree-surgeon = treeSurgeon; };
         defaultPackage = treeSurgeon;
         devShell = pkgs.haskellPackages.shellFor {
@@ -28,6 +48,7 @@
               happy
               alex
               asciidoctor
+              createDocumentationLocally
             ];
           shellHook = "command -v fish &> /dev/null && fish";
           };
