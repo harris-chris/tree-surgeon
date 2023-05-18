@@ -3,7 +3,7 @@ module Output
     showTree
     , showTreeComparison
     , toBashArray
-    , flattenedToBashArray
+    -- , flattenedToBashArray
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
@@ -12,6 +12,8 @@ import Debug.Trace
 import System.Console.ANSI
 import System.Directory.Tree
 import System.FilePath
+
+import AST
 
 singleInd :: String
 singleInd = "   "
@@ -131,22 +133,24 @@ showTreeComparison' (Just prelimStr) isLast Nothing (Dir name contents) =
         lastLine = showTreeComparison' (Just lastPrelimStr) True Nothing (last contents)
     in init $ unlines $ thisLineStr:subLines ++ [lastLine]
 
-flattenedToBashArray :: [DirTree a] -> String
-flattenedToBashArray trees =
-    let fnames = name <$> trees
-        paths = ("." </>) <$> fnames
-    in unwords paths
+-- flattenedToBashArray :: IsFilePath a => [DirTree a] -> String
+-- flattenedToBashArray trees =
+--     let paths = toTree <$> trees
+--         paths = (\t -> (toFilePath t) </> (name t)) <$> trees
+--         paths' = normalise <$> paths
+--     in unwords paths'
+--         where toTree (File name f) = toFilePath f </> name
+--               toTree (Dir name _) =
 
-toBashArray :: DirTree a -> String
-toBashArray tree =
-    let allFiles = toBashArray' "." tree
-    in unwords allFiles
+toBashArray :: DirTree a -> [String]
+toBashArray tree = toBashArray' "." tree
 
 toBashArray' :: FileName -> DirTree a -> [FileName]
-toBashArray' path (Dir name contents) =
+toBashArray' path (Dir name conts) =
     let path' = path </> name
-        contentsArrays = toBashArray' path' <$> contents
-        contentsFlattened = concat contentsArrays
-    in path':contentsFlattened
+        contsArrays = toBashArray' path' <$> conts
+        contsFlattened = concat contsArrays
+        contsFlatNormalized = normalise <$> contsFlattened
+    in path':contsFlatNormalized
 toBashArray' path (File name _) = [path </> name]
 

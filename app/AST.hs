@@ -3,6 +3,7 @@ module AST
     Exp(..)
     , FsObjData(..)
     , IsMatcher(..)
+    , IsFilePath(..)
     , TreeSurgeonException(..)
     , Matcher
   ) where
@@ -47,6 +48,12 @@ instance Show TreeSurgeonException where
 data FsObjData =
     FileData { parents :: [ByteString] }
     deriving (Eq, Show, Ord)
+
+class IsFilePath a where
+    toFilePath :: a -> FilePath
+
+instance IsFilePath FsObjData where
+    toFilePath (FileData pts) = joinPath $ BS.unpack <$> pts
 
 class Show a => IsMatcher a where
     getMatcher :: a -> MatcherE a

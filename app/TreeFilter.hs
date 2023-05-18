@@ -15,6 +15,7 @@ import System.FilePath
 import System.Directory.Tree
 import AST
 import qualified Lexer as L
+import Output
 import Parser (parseTreeSurgeon)
 
 toElements :: DirTree a -> DirTree FsObjData
@@ -45,11 +46,11 @@ applyFilterWithComparative dirname ioF filterStr =
             Left err -> throw $ err
             Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
-getExcluded :: DirTree FsObjData -> DirTree FsObjData -> [DirTree FsObjData]
+getExcluded :: DirTree FsObjData -> DirTree FsObjData -> [String]
 getExcluded origTree filteredTree =
-    let flattenedOrig = flattenDir origTree
-        flattenedFiltered = flattenDir filteredTree
-    in filter (\z -> not $ elem z flattenedFiltered) flattenedOrig
+    let arrayOrig = toBashArray origTree
+        arrayFiltered = toBashArray filteredTree
+    in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
 filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
 filterTreeFilesWith f (File name objData) = f name objData

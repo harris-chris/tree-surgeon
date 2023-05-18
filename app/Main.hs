@@ -44,7 +44,7 @@ tsFilter (ToBashArray fltr source False) =
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f
 tsFilter (ToBashArray fltr source True) =
-    let applyFilterF = \x y -> putStrLn . flattenedToBashArray $ getExcluded x y
+    let applyFilterF = \x y -> putStrLn . unwords $ getExcluded x y
         f = applyFilterWithComparative source applyFilterF
     in case fltr of
         Left str -> f (BS.pack str)

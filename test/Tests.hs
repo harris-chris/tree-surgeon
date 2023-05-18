@@ -3,13 +3,15 @@ import Prelude hiding (Word, getLine)
 import Test.Hspec
 
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Char8 as BS
+import Data.List (sort)
 import Data.Maybe
 import Debug.Trace (trace, traceShowId)
 import System.FilePath
 import System.Directory.Tree
 
 import AST
+import Output
 import TreeFilter
 
 testDataPath :: FilePath
@@ -47,10 +49,15 @@ filterOutDirs _ = error "Can only filter directory"
 treeTestData :: DirTree ()
 treeTestData = Dir "test-data" [ treeA, treeB, treeC ]
 
-compareToExpected :: DirTree () -> DirTree FsObjData -> IO ()
+compareToExpected :: DirTree () -> DirTree a -> IO ()
 compareToExpected expected actual =
-    let actual' = () <$ (trace ("actual = " ++ show actual) actual)
-    in (trace ("actual' = " ++ show actual') actual') `shouldBe` expected
+    let actual' = () <$ actual
+    in actual' `shouldBe` expected
+
+bashArrayMatches :: [ String ] -> DirTree a -> IO ()
+bashArrayMatches expectedArray actual =
+    let actualArray = toBashArray $ () <$ actual
+    in (sort actualArray) `shouldBe` (sort expectedArray)
 
 main :: IO ()
 main = hspec $ do
@@ -158,4 +165,15 @@ main = hspec $ do
         --     let testStr = "isNotAToken is not a valid expression"
         --     applyFilterWith testDataPath testStr ( putStrLn . show ) `shouldThrow`
         --         (== Couldn'tLex (show testStr))
+    describe "Bash array functions" $ do
+        it "Correctly excludes as well as includes" $ do
+            let expected = Dir "test-data" [ treeA ]
+            let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
+            let expected =
+                    [ "a-project/file_a_1.cpp"
+                    , "a-project/file_a_2.hpp"
+                    , "b-library/file_b_1.cpp"
+                    , "b-library/file_b_2.hpp"
+                    , "b-library" ]
+            applyFilterWith testDataPath ( bashArrayMatches expected ) testStr
 
