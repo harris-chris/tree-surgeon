@@ -54,11 +54,6 @@ compareToExpected expected actual =
     let actual' = () <$ actual
     in actual' `shouldBe` expected
 
-bashArrayMatches :: [ String ] -> DirTree a -> IO ()
-bashArrayMatches expectedArray actual =
-    let actualArray = toBashArray $ () <$ actual
-    in (sort actualArray) `shouldBe` (sort expectedArray)
-
 main :: IO ()
 main = hspec $ do
     describe "Basic Functions" $ do
@@ -169,11 +164,12 @@ main = hspec $ do
         it "Correctly excludes as well as includes" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
-            let expected =
+            let expected = ("test-data" </>) <$>
                     [ "a-project/file_a_1.cpp"
                     , "a-project/file_a_2.hpp"
                     , "b-library/file_b_1.cpp"
                     , "b-library/file_b_2.hpp"
                     , "b-library" ]
-            applyFilterWith testDataPath ( bashArrayMatches expected ) testStr
+            let compFunc = \o f -> (sort $ getExcluded o f) `shouldBe` (sort expected)
+            applyFilterWithComparative testDataPath compFunc testStr
 

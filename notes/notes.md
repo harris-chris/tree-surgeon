@@ -5,6 +5,8 @@ With the exclude function, we only want to output stuff that's been excluded. Ex
 - Any files that are specifically exluded
 - Any directories that are excluded as a result of having no files in them.
 
+An exclusion cannot result in a tree, it needs to result in either a list of files, like [String], or a datastructure which contains the original and the filtered.
+
 We may need to arrive at the list of inverses by comparison:
 - toBashArray the original and the filtered
 - An exclude is anything that isn't in the original. This could be done as a function to applyFilterWithComparative
