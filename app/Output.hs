@@ -147,7 +147,7 @@ toBashArray tree = toBashArray' "." tree
 
 toBashArray' :: FileName -> DirTree a -> [FileName]
 toBashArray' path (Dir name conts) =
-    let path' = path </> name
+    let path' = normalise $ path </> name
         contsArrays = toBashArray' path' <$> conts
         contsFlattened = concat contsArrays
         contsFlatNormalized = normalise <$> contsFlattened
