@@ -37,6 +37,8 @@ tokens :-
 <0> nameStartsWith      	{ tok NameStartsWith }
 <0> nameEndsWith        	{ tok NameEndsWith }
 <0> nameContains        	{ tok NameContains }
+<0> all         		{ tok All }
+<0> none 		      	{ tok None }
 -- Syntax
 <0> "("     			{ tok LPar }
 <0> ")"     			{ tok RPar }
@@ -98,6 +100,8 @@ data Token
   | NameStartsWith
   | NameEndsWith
   | NameContains
+  | All
+  | None
   | String ByteString
   | LPar
   | RPar

@@ -70,6 +70,8 @@ data Exp a =
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
+    | All a
+    | None a
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
@@ -107,6 +109,8 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (NameContains _ exp) =
         nameMatchesWith isInfixOf' exp
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
+    getMatcher (All _) = Right (\_ _ -> True)
+    getMatcher (None _) = Right (\_ _ -> False)
     getMatcher (EPar _ x) = getMatcher x
     getMatcher exp = Left $ Couldn'tParse $ show exp
 

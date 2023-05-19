@@ -32,6 +32,8 @@ import AST
   nameStartsWith  		{ L.RangedToken L.NameStartsWith _ }
   nameEndsWith  		{ L.RangedToken L.NameEndsWith _ }
   nameContains  		{ L.RangedToken L.NameContains _ }
+  all 				{ L.RangedToken L.All _ }
+  none 				{ L.RangedToken L.None _ }
 -- Syntax
   '('        			{ L.RangedToken L.LPar _ }
   ')'        			{ L.RangedToken L.RPar _ }
@@ -53,6 +55,8 @@ import AST
 %left nameStartsWith
 %left nameEndsWith
 %left nameContains
+%left all
+%left none
 
 %%
 
@@ -74,6 +78,8 @@ exp :: { Exp L.Range }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }
+  | all 			{ All (L.rtRange $1 <-> L.rtRange $1) }
+  | none 			{ None (L.rtRange $1 <-> L.rtRange $1) }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }

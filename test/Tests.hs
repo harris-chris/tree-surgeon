@@ -62,6 +62,12 @@ flatFilesOnly tree =
               f (Dir _ _) = False
               f (Failed _ _) = True
 
+{-|
+  Applies two filters to the same tree, and a function which compares the resultant
+  two filtered trees to the original tree. Mostly useful for completeness checks, ie
+  ensuring that what has been filtered out by one string is the inverse of what has
+  been filtered out by that string's inverse.
+-}
 applyTwoFiltersAndCompare :: FileName -> LBS.ByteString -> LBS.ByteString -> (DirTree FsObjData -> DirTree FsObjData -> DirTree FsObjData -> IO()) -> IO ()
 applyTwoFiltersAndCompare dirname filtA filtB compareF =
     do
@@ -73,6 +79,12 @@ applyTwoFiltersAndCompare dirname filtA filtB compareF =
             (_, Left err) -> throw $ err
             (Right filteredA, Right filteredB) -> compareF origTree filteredA filteredB
 
+{-|
+  Takes a single tree and single filter, and then compares the original tree (expressed
+  as a bash array), the filtered tree, and the --exclude filtered tree. Mostly useful
+  for completeness checks, ie to ensure that what has been excluded + what has been
+  included equals the original.
+-}
 compareInclExcl :: FileName -> LBS.ByteString -> ([String] -> [String] -> [String] -> IO()) -> IO ()
 compareInclExcl dirname filtStr compareF =
     do
@@ -162,6 +174,14 @@ main = hspec $ do
             let treeB' = filterDir (\dt -> BS.isInfixOf "file_b" (BS.pack $ name dt)) treeB
             let expected = Dir "test-data" [ treeB' ]
             let testStr = "nameContains \"file_b\""
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes all" $ do
+            let expected = Dir "test-data" [ treeA , treeB , treeC ]
+            let testStr = "all"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes none" $ do
+            let expected = Dir "test-data" [ ]
+            let testStr = "none"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
     describe "Inverting expressions" $ do
         it "Correctly executes !exp" $ do
