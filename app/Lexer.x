@@ -27,6 +27,7 @@ tokens :-
 -- Operators
 <0> "|"				{ tok Or }
 <0> "&"				{ tok And }
+<0> "!"				{ tok Not }
 -- Matchers
 <0> ancestorNameIs		{ tok AncestorNameIs }
 <0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
@@ -88,6 +89,7 @@ tokString inp@(_, _, str, _) len =
 data Token
   = Or
   | And
+  | Not
   | AncestorNameIs
   | AncestorNameStartsWith
   | AncestorNameEndsWith

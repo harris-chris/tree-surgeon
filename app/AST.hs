@@ -59,7 +59,10 @@ class Show a => IsMatcher a where
     getMatcher :: a -> MatcherE a
 
 data Exp a =
-    AncestorNameIs a (Exp a)
+    Or a (Exp a) (Exp a)
+    | And a (Exp a) (Exp a)
+    | Not a (Exp a)
+    | AncestorNameIs a (Exp a)
     | AncestorNameStartsWith a (Exp a)
     | AncestorNameEndsWith a (Exp a)
     | AncestorNameContains a (Exp a)
@@ -67,14 +70,25 @@ data Exp a =
     | NameStartsWith a (Exp a)
     | NameEndsWith a (Exp a)
     | NameContains a (Exp a)
-    | Or a (Exp a) (Exp a)
-    | And a (Exp a) (Exp a)
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
     deriving (Foldable, Show)
 
 instance Show a => IsMatcher (Exp a) where
+    getMatcher (Or _ x y) =
+        case ((getMatcher x), (getMatcher y)) of
+            (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
+            (Left err, _) -> Left err
+            (_, Right err) -> Right err
+    getMatcher (And _ x y) =
+        case ((getMatcher x), (getMatcher y)) of
+            (Right fx, Right fy) -> Right $ \n d -> fx n d && fy n d
+            (Left err, _) -> Left err
+            (_, Right err) -> Right err
+    getMatcher (Not _ exp) =
+        let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
+        in invertMatcher <$> getMatcher exp
     getMatcher (AncestorNameIs _ exp) =
         ancestorNameMatchesWith (==) exp
     getMatcher (AncestorNameStartsWith _ exp) =
@@ -93,16 +107,6 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (NameContains _ exp) =
         nameMatchesWith isInfixOf' exp
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
-    getMatcher (Or _ x y) =
-        case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
-            (Left err, _) -> Left err
-            (_, Right err) -> Right err
-    getMatcher (And _ x y) =
-        case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \n d -> fx n d && fy n d
-            (Left err, _) -> Left err
-            (_, Right err) -> Right err
     getMatcher (EPar _ x) = getMatcher x
     getMatcher exp = Left $ Couldn'tParse $ show exp
 

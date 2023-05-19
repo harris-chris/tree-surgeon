@@ -22,6 +22,7 @@ import AST
 -- Operators
   '|'        			{ L.RangedToken L.Or _ }
   '&'				{ L.RangedToken L.And _ }
+  '!'				{ L.RangedToken L.Not _ }
 -- Matchers
   ancestorNameIs  		{ L.RangedToken L.AncestorNameIs _ }
   ancestorNameStartsWith 	{ L.RangedToken L.AncestorNameStartsWith _ }
@@ -43,6 +44,7 @@ import AST
 
 %left '|'
 %left '&'
+%left '!'
 %left ancestorNameIs
 %left ancestorNameStartsWith
 %left ancestorNameEndsWith
@@ -63,6 +65,7 @@ listParse(typ) :: { [Exp L.Range] }
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
+  | '!' exp 			{ Not (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameIs exp 		{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameEndsWith exp  	{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }

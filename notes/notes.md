@@ -1,4 +1,8 @@
-We need a not statement!
+We probably want some more applyFilterWith functions:
+- apply two filters and compare
+- apply inverse filter and compare
+These are probably test-only functions.
+
 What is the relationship between using not and using exclude? Can we draw any firm conclusions?
 
 With the exclude function, we only want to output stuff that's been excluded. Excluded means:

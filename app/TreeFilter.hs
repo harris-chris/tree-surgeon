@@ -1,9 +1,11 @@
 module TreeFilter
   (
-    filterDir
-    , getExcluded
-    , applyFilterWith
+    applyFilterWith
     , applyFilterWithComparative
+    , filterDir
+    , filterTreeWith
+    , getExcluded
+    , toElements
     , TreeSurgeonException(..)
   ) where
 

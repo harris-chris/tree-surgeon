@@ -2,6 +2,7 @@ import Prelude hiding (Word, getLine)
 
 import Test.Hspec
 
+import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.ByteString.Char8 as BS
 import Data.List (sort)
@@ -53,6 +54,36 @@ compareToExpected :: DirTree () -> DirTree a -> IO ()
 compareToExpected expected actual =
     let actual' = () <$ actual
     in actual' `shouldBe` expected
+
+flatFilesOnly :: DirTree a -> [DirTree a]
+flatFilesOnly tree =
+    filter f $ flattenDir tree
+        where f (File _ _) = True
+              f (Dir _ _) = False
+              f (Failed _ _) = True
+
+applyTwoFiltersAndCompare :: FileName -> LBS.ByteString -> LBS.ByteString -> (DirTree FsObjData -> DirTree FsObjData -> DirTree FsObjData -> IO()) -> IO ()
+applyTwoFiltersAndCompare dirname filtA filtB compareF =
+    do
+        origTree <- (toElements . dirTree) <$> readDirectoryWith return dirname
+        let filteredTreeAE = filterTreeWith origTree filtA
+        let filteredTreeBE = filterTreeWith origTree filtB
+        case (filteredTreeAE, filteredTreeBE) of
+            (Left err, _) -> throw $ err
+            (_, Left err) -> throw $ err
+            (Right filteredA, Right filteredB) -> compareF origTree filteredA filteredB
+
+compareInclExcl :: FileName -> LBS.ByteString -> ([String] -> [String] -> [String] -> IO()) -> IO ()
+compareInclExcl dirname filtStr compareF =
+    do
+        origTree <- (toElements . dirTree) <$> readDirectoryWith return dirname
+        let origArray = toBashArray origTree
+        let inclArrayE = toBashArray <$> filterTreeWith origTree filtStr
+        let exclArrayE = getExcluded origTree <$> filterTreeWith origTree filtStr
+        case (inclArrayE, exclArrayE) of
+            (Left err, _) -> throw $ err
+            (_, Left err) -> throw $ err
+            (Right inclArray, Right exclArray) -> compareF origArray inclArray exclArray
 
 main :: IO ()
 main = hspec $ do
@@ -132,6 +163,25 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeB' ]
             let testStr = "nameContains \"file_b\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
+    describe "Inverting expressions" $ do
+        it "Correctly executes !exp" $ do
+            let expected = Dir "test-data" [ treeB , treeC ]
+            let testStr = "!ancestorNameIs \"a-project\""
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes !(exp | exp)" $ do
+            let treeA' = filterDir
+                          (\dt -> (not $ LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt)
+                          && (not $ LBS.isSuffixOf ".hpp" $ LBS.pack $ name dt)) treeA
+            let expected = Dir "test-data" [ treeA' , treeC ]
+            let testStr = "!(nameEndsWith \".cpp\" | nameEndsWith \".hpp\")"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Resolves the inverse of an expression + the expression to be the total" $ do
+            let str = "nameEndsWith \".cpp\""
+            let notStr = "!" <> str
+            let compareF = \orig a b ->
+                            (sort $ (flatFilesOnly a) ++ (flatFilesOnly b))
+                            `shouldBe` sort (flatFilesOnly orig)
+            applyTwoFiltersAndCompare testDataPath str notStr compareF
     describe "Combinations of expressions" $ do
         it "Correctly executes exp | exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -195,4 +245,8 @@ main = hspec $ do
                     , "b-library" ]
             let compFunc = \o f -> (sort $ getExcluded o f) `shouldBe` (sort expected)
             applyFilterWithComparative testDataPath compFunc testStr
+        it "Includes plus Excludeds equals total" $ do
+            let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
+            let compareF = \orig incl excl -> (sort $ incl ++ excl) `shouldBe` (sort orig)
+            compareInclExcl testDataPath testStr compareF
 
