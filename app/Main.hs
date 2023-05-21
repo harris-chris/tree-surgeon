@@ -37,13 +37,13 @@ tsFilter (ShowDiffTree fltr source) =
     in case fltr of
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f
-tsFilter (ToBashArray fltr source False) =
-    let applyFilterF = putStrLn . toBashArray
+tsFilter (ToBashArray fltr source False ancestors) =
+    let applyFilterF = putStrLn . unwords . (toBashArray ancestors)
         f = applyFilterWith source applyFilterF
     in case fltr of
         Left str -> f (BS.pack str)
         Right file -> applyFuncWithFile file f
-tsFilter (ToBashArray fltr source True) =
+tsFilter (ToBashArray fltr source True ancestors) =
     let applyFilterF = \x y -> putStrLn . unwords $ getExcluded x y
         f = applyFilterWithComparative source applyFilterF
     in case fltr of

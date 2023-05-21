@@ -48,10 +48,10 @@ applyFilterWithComparative dirname ioF filterStr =
             Left err -> throw $ err
             Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
-getExcluded :: DirTree FsObjData -> DirTree FsObjData -> [String]
-getExcluded origTree filteredTree =
-    let arrayOrig = toBashArray origTree
-        arrayFiltered = toBashArray filteredTree
+getExcluded :: Bool -> DirTree FsObjData -> DirTree FsObjData -> [String]
+getExcluded ancestors origTree filteredTree =
+    let arrayOrig = toBashArray ancestors origTree
+        arrayFiltered = toBashArray ancestors filteredTree
     in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
 filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool

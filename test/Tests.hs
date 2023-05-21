@@ -89,9 +89,9 @@ compareInclExcl :: FileName -> LBS.ByteString -> ([String] -> [String] -> [Strin
 compareInclExcl dirname filtStr compareF =
     do
         origTree <- (toElements . dirTree) <$> readDirectoryWith return dirname
-        let origArray = toBashArray origTree
-        let inclArrayE = toBashArray <$> filterTreeWith origTree filtStr
-        let exclArrayE = getExcluded origTree <$> filterTreeWith origTree filtStr
+        let origArray = toBashArray True origTree
+        let inclArrayE = toBashArray True <$> filterTreeWith origTree filtStr
+        let exclArrayE = getExcluded True origTree <$> filterTreeWith origTree filtStr
         case (inclArrayE, exclArrayE) of
             (Left err, _) -> throw $ err
             (_, Left err) -> throw $ err
@@ -253,7 +253,7 @@ main = hspec $ do
                     , "a-project"
                     , "b-library"
                     , "" ]
-            let compFunc = \f -> (sort $ toBashArray f) `shouldBe` (sort expected)
+            let compFunc = \f -> (sort $ toBashArray True f) `shouldBe` (sort expected)
             applyFilterWith testDataPath compFunc testStr
         it "Correctly excludes" $ do
             let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
@@ -263,7 +263,7 @@ main = hspec $ do
                     , "b-library/file_b_1.cpp"
                     , "b-library/file_b_2.hpp"
                     , "b-library" ]
-            let compFunc = \o f -> (sort $ getExcluded o f) `shouldBe` (sort expected)
+            let compFunc = \o f -> (sort $ getExcluded True o f) `shouldBe` (sort expected)
             applyFilterWithComparative testDataPath compFunc testStr
         it "Includes plus Excludeds equals total" $ do
             let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""

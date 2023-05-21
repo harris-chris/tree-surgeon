@@ -18,7 +18,8 @@ data CliOptions
     | ToBashArray
         { filter :: Either String String
         , source :: String
-        , exclude :: Bool }
+        , exclude :: Bool
+        , ancestors :: Bool }
     | WriteFilteredTree
         { filter :: Either String String
         , source :: String
@@ -54,13 +55,19 @@ showDiffTree :: Parser CliOptions
 showDiffTree = ShowDiffTree <$> filterStrArg <*> sourceDirArg
 
 toBash :: Parser CliOptions
-toBash = ToBashArray <$> filterStrArg <*> sourceDirArg <*> excludedArg
+toBash = ToBashArray <$> filterStrArg <*> sourceDirArg <*> excludedArg <*> ancestorsArg
 
 excludedArg :: Parser Bool
 excludedArg = switch
     $ long "excluded"
     <> short 'e'
     <> help "Output excluded, rather than included, files"
+
+ancestorsArg :: Parser Bool
+ancestorsArg = switch
+    $ long "ancestors"
+    <> short 'a'
+    <> help "Output ancestor directories"
 
 filterStrArg :: Parser (Either String String)
 filterStrArg =
