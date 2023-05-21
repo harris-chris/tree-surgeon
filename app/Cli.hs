@@ -61,13 +61,14 @@ excludedArg :: Parser Bool
 excludedArg = switch
     $ long "excluded"
     <> short 'e'
-    <> help "Output excluded, rather than included, files"
+    <> help "Output excluded, rather than included, files and directories"
 
 ancestorsArg :: Parser Bool
 ancestorsArg = switch
     $ long "ancestors"
     <> short 'a'
-    <> help "Output ancestor directories"
+    <> ( help $ "Output the ancestor directories of all included files; if not used, "
+                <> "then only filenames (and not directories) will be output" )
 
 filterStrArg :: Parser (Either String String)
 filterStrArg =

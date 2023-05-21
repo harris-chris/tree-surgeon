@@ -16,4 +16,5 @@ cd "test/test-data-temp"
 EXEC_STRING="$EXEC to-bash -f 'nameEndsWith ".cpp"' -s ./ | xargs rm"
 echo "Executing $EXEC_STRING"
 eval $EXEC_STRING
+if
 
