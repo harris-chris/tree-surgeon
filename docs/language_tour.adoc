@@ -5,6 +5,8 @@ Tree surgeon uses a mini-language to define its filters, that can then be applie
 
 xref:faq.adoc#why-not-directories[Why does tree-surgeon not filter on directories as well as files?]
 
+These expressions are composed of _matcher functions_ and logical operators.
+
 An example of a very simple expression is:
 [source,haskell]
 nameIs "includeMe.txt"
@@ -16,7 +18,7 @@ This main expression can be composed of sub-expressions, linked via `&` (and) an
 [source,haskell]
 nameIs "this" | nameIs "that"
 
-Will include any files that have a filename of "this", *or* any files that have the filename of "that".
+Will include any files (at any depth of the tree) that have a filename of "this", *or* any files that have the filename of "that".
 [sidebar]
 As shown shortly, this can also be expressed as `nameIs ["this", "that"]`.
 
@@ -24,11 +26,39 @@ Conversely,
 [source,haskell]
 nameStartsWith "src" & nameEndsWith "cpp"
 
-Will include only files that have a filename that _starts_with "src", and ends with "cpp"; so
+Will include only files (at any depth) that have a filename that _starts_with "src", and ends with "cpp"; this includes
 * `srcFile.cpp`
-* `srcMain.cpp`
+* `a/b/c/srcMain.cpp`
 but *not*
 * `Main.cpp`
 * `srcFile`
 
+== Expressions can be parenthesized and negated
+Expressions can be put into parentheses, so
+[source,haskell]
+( nameIs "Main.cpp" | ancestorNameIs "src" )
+
+is the same as
+
+[source,haskell]
+nameIs "Main.cpp" | ancestorNameIs "src"
+
+They can also be negated by the `!` operator, so:
+[source,haskell]
+!(nameStartsWith "Main")
+
+Will include all files _except_ those that start with "Main".
+
+== Matcher functions can take either a single argument, or a list of arguments
+All matcher functions can be passed either a single argument, or a list of arguments. Passing a list is equivalent to using the same matcher function multiple times on each argument in the list, and combining the results with the *or* operator, `|`. So
+
+[source,haskell]
+nameIs ["Main.cpp", "Lib.cpp", "Lib.hpp"]
+
+is the same as
+
+[source,haskell]
+nameIs "Main.cpp" | nameIs "Lib.cpp" | nameIs "Lib.hpp"
+
+xref:matchers.adoc[A complete list of matcher functions]
 

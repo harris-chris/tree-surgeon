@@ -1,0 +1,23 @@
+= Matcher Functions Reference
+
+== [[name-related]]nameIs, nameStartsWith, nameEndsWith, nameContains
+[source,haskell]
+nameEndsWith ".cpp"
+
+[source,haskell]
+nameIs ["ab", "bc", "cd"]
+
+These functions operate on the base file name (the path is not included) and assess whether the name matches the provided string(s).
+* For `nameIs`, the entire name must match
+* `nameContains` will also match the entire name, ie `nameContains "Main.hs"` will match `Main.hs`
+* `nameEndsWith` is useful for matching file extensions, ie `nameEndsWith ".txt"`
+* `nameEndsWith` will match both normal and hidden files, ie `nameEndsWith ".cache"` will match both `cache` and `.cache`.
+
+== [[ancestor-related]]ancestorNameIs, ancestorNameStartsWith, ancestorNameEndsWith, ancestorNameContains
+[source,haskell]
+ancestorNameIs ["src", "docs"]
+
+[source,haskell]
+!(ancestorNameContains ["temp", "tmp"])
+
+These functions operate on all ancestor directories of the file (this includes the direct parents) and assess whether _any_ ancestor directory matches the provided string(s). The `Is`, `StartsWith`, `EndsWith` and `Contains` variants match in the same way as xref:#name-related[nameIs] and its variants, above.

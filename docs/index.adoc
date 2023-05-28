@@ -17,8 +17,4 @@ tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-
 [source,haskell]
 tree-surgeon to-bash -f 'nameEndsWith [".cpp", ".hpp"]' -s ./my-project | xargs sed -i 's/Apple/Orange/g'
 
-- copy a directory filtered
-- show comparative
-- create .gitignore (probably doesn't need to be special)
-
 == Take the xref:language_tour.adoc#[language tour]

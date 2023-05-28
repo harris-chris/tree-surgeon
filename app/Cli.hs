@@ -73,7 +73,7 @@ ancestorsArg = switch
 filterStrArg :: Parser (Either String String)
 filterStrArg =
     (Left <$> strOption
-        (long "filter"
+        (long "file-filter"
         <> short 'f'
         <> metavar "FILTER STRING"
         <> help "Filter to apply to folder")
