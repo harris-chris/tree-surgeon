@@ -7,13 +7,16 @@ Tree surgeon is primarily intended to be an intermediary tool, called by other a
 
 * Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
 [source,haskell]
-tree-surgeon show-diff -f 'nameEndsWith ".c"' -s ./my-c-project
+tree-surgeon show-diff -f 'nameEndsWith ".c"' -s ./my-project
 
 * Recursively remove all `*.tmp` files in sub-directories named `.cache` from a directory:
 [source,haskell]
-tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-c-project
+tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-project | xargs rm
 
-* remove files from an existing tree
+* Find and replace the string "Apple" with "Orange" in all ".cpp" or ".hpp" files:
+[source,haskell]
+tree-surgeon to-bash -f 'nameEndsWith [".cpp", ".hpp"]' -s ./my-project | xargs sed -i 's/Apple/Orange/g'
+
 - copy a directory filtered
 - show comparative
 - create .gitignore (probably doesn't need to be special)

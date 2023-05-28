@@ -49,6 +49,22 @@
         (if (= files "")
           "Test passed: No .*/.cache.*/.*tmp files found"
           (str "Test failed: Files " files " were found")))))
+  (let [args "to-bash -f 'nameEndsWith [\".cpp\", \".hpp\"]' -s ./ | xargs sed -i 's/Apple/Orange/g'"
+        dir (recreate-test-data-temp)]
+    (let [before-files (->
+        (shell {:out :string :dir "test/test-data-temp"} "grep -ir 'Apple'")
+        :out)]
+      (prn
+        (if (not= before-files "")
+          (do
+            (shell {:dir "test/test-data-temp"} (get-bash-cmd args))
+            (let [files (->
+                (shell {:out :string :continue :true :dir "test/test-data-temp"} "grep -ir 'Apple'")
+                :out)]
+              (if (= files "")
+                "Test passed: No files containing Apple found"
+                (str "Test failed: Files " files " were found"))))
+          "Test error: No files containing Apple were found in test data"))))
   (prn "Tests finished"))
 
 (when (= *file* (System/getProperty "babashka.file"))
