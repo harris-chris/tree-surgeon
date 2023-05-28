@@ -31,6 +31,7 @@ treeB :: DirTree ()
 treeB = Dir "b-library" [
     File "file_b_1.cpp" ()
     , File "file_b_2.hpp" ()
+    , File "file_b_3.tmp" ()
     , Dir ".cache" [
             File "temp_b_3.tmp" ()
         ]
@@ -266,6 +267,7 @@ main = hspec $ do
                     , "a-project/file_a_2.hpp"
                     , "b-library/file_b_1.cpp"
                     , "b-library/file_b_2.hpp"
+                    , "b-library/file_b_3.tmp"
                     , "b-library/.cache"
                     , "b-library/.cache/temp_b_3.tmp"
                     , "b-library" ]
