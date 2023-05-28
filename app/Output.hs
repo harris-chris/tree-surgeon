@@ -18,18 +18,12 @@ import AST
 singleInd :: String
 singleInd = "   "
 
-crossJoiner :: Char
-crossJoiner = '├'
-
 substituteJoiner :: Char -> String -> String
 substituteJoiner joiner str =
     let indWidth = length singleInd
     in if length str > 1
         then take (length str - indWidth) str <> (joiner:"──")
         else str
-
-lastJoiner :: Char
-lastJoiner = '└'
 
 showTree :: DirTree a -> String
 showTree tree = showTree' "" True tree
@@ -142,7 +136,8 @@ toBashArray' path inclDirs (Dir name conts) =
         contsArrays = toBashArray' path' inclDirs <$> conts
         contsFlat = concat contsArrays
         contsFlat' = normalise <$> contsFlat
-        path'' = if ( inclDirs && length contsFlat' > 0 ) then path' else []
-    in path'':contsFlat'
+    in if ( inclDirs && length contsFlat' > 0 && path' /= "." )
+        then path':contsFlat'
+        else contsFlat'
 toBashArray' path _ (File name _) = [path </> name]
 

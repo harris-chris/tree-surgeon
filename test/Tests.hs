@@ -31,13 +31,16 @@ treeB :: DirTree ()
 treeB = Dir "b-library" [
     File "file_b_1.cpp" ()
     , File "file_b_2.hpp" ()
+    , Dir ".cache" [
+            File "temp_b_3.tmp" ()
+        ]
     ]
 
 treeC :: DirTree ()
 treeC = Dir "c-executable" [
     File "file_c_1.hs" ()
     , Dir "ext" [
-        File "binary" ()
+        File "tree" ()
         ]
     ]
 
@@ -152,10 +155,10 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
             let treeC' = filterDir
                           (\dt -> LBS.isPrefixOf "ext" (LBS.pack $ name dt)
-                          || LBS.isPrefixOf "bin" (LBS.pack $ name dt)
+                          || LBS.isPrefixOf "tr" (LBS.pack $ name dt)
                           ) treeC
             let expected = Dir "test-data" [ treeA' , treeC' ]
-            let testStr = "nameStartsWith [\"docs\", \"bin\"]"
+            let testStr = "nameStartsWith [\"docs\", \"tr\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameEndsWith string" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -183,17 +186,18 @@ main = hspec $ do
             let expected = Dir "test-data" [ ]
             let testStr = "none"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
+
     describe "Inverting expressions" $ do
         it "Correctly executes !exp" $ do
             let expected = Dir "test-data" [ treeB , treeC ]
             let testStr = "!ancestorNameIs \"a-project\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes !(exp | exp)" $ do
+        it "Correctly executes !(exp | exp | exp)" $ do
             let treeA' = filterDir
                           (\dt -> (not $ LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt)
                           && (not $ LBS.isSuffixOf ".hpp" $ LBS.pack $ name dt)) treeA
             let expected = Dir "test-data" [ treeA' , treeC ]
-            let testStr = "!(nameEndsWith \".cpp\" | nameEndsWith \".hpp\")"
+            let testStr = "!(nameEndsWith \".cpp\" | nameEndsWith \".hpp\" | nameEndsWith \".tmp\")"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Resolves the inverse of an expression + the expression to be the total" $ do
             let str = "nameEndsWith \".cpp\""
@@ -256,17 +260,19 @@ main = hspec $ do
             let compFunc = \f -> (sort $ toBashArray True f) `shouldBe` (sort expected)
             applyFilterWith testDataPath compFunc testStr
         it "Correctly excludes" $ do
-            let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
+            let testStr = "nameIs [\"docs.md\", \"tree\"] | nameEndsWith \".hs\""
             let expected = (normalise . ("test-data" </>)) <$>
                     [ "a-project/file_a_1.cpp"
                     , "a-project/file_a_2.hpp"
                     , "b-library/file_b_1.cpp"
                     , "b-library/file_b_2.hpp"
+                    , "b-library/.cache"
+                    , "b-library/.cache/temp_b_3.tmp"
                     , "b-library" ]
             let compFunc = \o f -> (sort $ getExcluded True o f) `shouldBe` (sort expected)
             applyFilterWithComparative testDataPath compFunc testStr
         it "Includes plus Excludeds equals total" $ do
-            let testStr = "nameIs [\"docs.md\", \"binary\"] | nameEndsWith \".hs\""
+            let testStr = "nameIs [\"docs.md\", \"tree\"] | nameEndsWith \".hs\""
             let compareF = \orig incl excl -> (sort $ incl ++ excl) `shouldBe` (sort orig)
             compareInclExcl testDataPath testStr compareF
 

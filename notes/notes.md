@@ -1,3 +1,10 @@
+What if you want to get rid of all folders named ".cache"? It's easy to empty those folders but not to remove the folders themselves.
+
+Could have an example where you search then xargs then sed in-place.
+Similar to `find`, could have a test where `find` output is compared to this.
+Could have smart-casing for strings
+Could have different filter string for directories.
+
 We probably want some more applyFilterWith functions:
 - apply two filters and compare
 - apply inverse filter and compare

@@ -1,9 +1,19 @@
 = Tree Surgeon
 :toc:
 
-Tree surgeon is a tool for filtering file trees. Filtering expressions are defined via a mini-language, and can then be applied to directories. For example:
+Tree surgeon is a tool for filtering file trees. Filtering expressions are defined via a mini-language, and can then be applied to directories.
 
-- remove files from an existing tree
+Tree surgeon is primarily intended to be an intermediary tool, called by other applications rather than by the user directly. However, there are a few user-centric use cases, particulary when inter-operating with a shell:
+
+* Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
+[source,haskell]
+tree-surgeon show-diff -f 'nameEndsWith ".c"' -s ./my-c-project
+
+* Recursively remove all `*.tmp` files in sub-directories named `.cache` from a directory:
+[source,haskell]
+tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-c-project
+
+* remove files from an existing tree
 - copy a directory filtered
 - show comparative
 - create .gitignore (probably doesn't need to be special)

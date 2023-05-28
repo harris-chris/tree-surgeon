@@ -1,5 +1,4 @@
 {
-  description = "Utility to convert dhall records and types to Python";
   inputs = {
     nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
     flake-utils.url = github:numtide/flake-utils;
@@ -29,6 +28,13 @@
             fi
           '';
         };
+        runExecutableTests = pkgs.writeShellApplication {
+          name = "run_executable_tests";
+          runtimeInputs = with pkgs; [ babashka ];
+          text = ''
+            bb test/executable-tests.clj
+          '';
+        };
       in
       {
         apps = {
@@ -36,22 +42,29 @@
             type = "app";
             program = "${createDocumentationLocally}/bin/create_documentation_locally";
           };
-        };
-        packages = { tree-surgeon = treeSurgeon; };
-        defaultPackage = treeSurgeon;
-        devShell = pkgs.haskellPackages.shellFor {
-            name = "tree-surgeon";
-            packages = p: [ treeSurgeon ];
-            withHoogle = true;
-            buildInputs = with pkgs; with pkgs.haskellPackages; [
-              cabal-install
-              happy
-              alex
-              asciidoctor
-              createDocumentationLocally
-            ];
-          shellHook = "command -v fish &> /dev/null && fish";
+          run_executable_tests = {
+            type = "app";
+            program = "${runExecutableTests}/bin/run_executable_tests";
           };
-       }
+        };
+        packages = {
+          tree-surgeon = treeSurgeon;
+          default = treeSurgeon;
+        };
+        devShell = pkgs.haskellPackages.shellFor {
+          name = "tree-surgeon";
+          packages = p: [ treeSurgeon ];
+          withHoogle = true;
+          buildInputs = with pkgs; with pkgs.haskellPackages; [
+            cabal-install
+            happy
+            alex
+            asciidoctor
+            createDocumentationLocally
+            babashka
+          ];
+          shellHook = "command -v fish &> /dev/null && fish";
+        };
+      }
     );
 }
