@@ -1,9 +1,11 @@
 = Tree Surgeon
-:toc:
+:toc: left
+:nofooter:
 
+== Introduction
 Tree surgeon is a tool for filtering file trees. Filtering expressions are defined via a mini-language, and can then be applied to directories.
 
-Tree surgeon is primarily intended to be an intermediary tool, called by other applications rather than by the user directly. However, there are a few user-centric use cases, particulary when inter-operating with a shell:
+Tree surgeon is primarily intended to be an intermediary tool, called by other applications rather than by the user directly. However, there are a few user-facing use cases, particulary when inter-operating with a shell:
 
 * Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
 [source,haskell]
@@ -17,4 +19,101 @@ tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-
 [source,haskell]
 tree-surgeon to-bash -f 'nameEndsWith [".cpp", ".hpp"]' -s ./my-project | xargs sed -i 's/Apple/Orange/g'
 
-== Take the xref:language_tour.adoc#[language tour]
+== Language tour
+
+=== Filter expressions
+Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where True indicates that the file should be included.
+
+xref:faq.adoc#why-not-directories[Why does tree-surgeon not filter on directories as well as files?]
+
+These expressions are composed of _matcher functions_ and logical operators.
+
+An example of a very simple expression is:
+[source,haskell]
+nameIs "includeMe.txt"
+
+Which tells tree surgeon to include any file named `includeMe.txt`. Tree surgeon will traverse the whole of the directory tree you specify, and for all files, test whether they match this expression. So in this case, any file named `includeMe.txt`, at any depth of the directory tree, will be included.
+
+=== Composing with & and |
+This main expression can be composed of sub-expressions, linked via `&` (and) and `|` (or) operators. For example:
+[source,haskell]
+nameIs "this" | nameIs "that"
+
+Will include any files (at any depth of the tree) that have a filename of "this", *or* any files that have the filename of "that".
+[sidebar]
+As shown shortly, this can also be expressed as `nameIs ["this", "that"]`.
+
+Conversely,
+[source,haskell]
+nameStartsWith "src" & nameEndsWith "cpp"
+
+Will include only files (at any depth) that have a filename that _starts_ with "src", and ends with "cpp"; this includes
+
+* `srcFile.cpp`
+* `a/b/c/srcMain.cpp`
+
+but *not*
+
+* `Main.cpp`
+* `srcFile`
+
+=== Parenthesizing and negating
+Expressions can be put into parentheses, so
+[source,haskell]
+( nameIs "Main.cpp" | ancestorNameIs "src" )
+
+is the same as
+
+[source,haskell]
+nameIs "Main.cpp" | ancestorNameIs "src"
+
+They can also be negated by the `!` operator, so:
+[source,haskell]
+!(nameStartsWith "Main")
+
+Will include all files _except_ those that start with "Main".
+
+=== Matchers can take a list of arguments
+All matcher functions that can be passed a single argument, can also be passed a list of arguments. Passing a list is equivalent to using the same matcher function multiple times on each argument in the list, and combining the results with the *or* operator, `|`. So
+
+[source,haskell]
+nameIs ["Main.cpp", "Lib.cpp", "Lib.hpp"]
+
+is the same as
+
+[source,haskell]
+nameIs "Main.cpp" | nameIs "Lib.cpp" | nameIs "Lib.hpp"
+
+== Matchers Reference
+
+=== [[name-related]]name...
+[source,haskell]
+nameEndsWith ".cpp"
+
+[source,haskell]
+nameIs ["ab", "bc", "cd"]
+
+These functions operate on the base file name (the path is not included) and assess whether the name matches the provided string(s).
+
+* For `nameIs`, the entire name must match
+* `nameContains` will also match the entire name, ie `nameContains "Main.hs"` will match `Main.hs`
+* `nameEndsWith` is useful for matching file extensions, ie `nameEndsWith ".txt"`
+* `nameEndsWith` will match both normal and hidden files, ie `nameEndsWith ".cache"` will match both `cache` and `.cache`.
+
+=== [[ancestor-related]]ancestorName...
+[source,haskell]
+ancestorNameIs ["src", "docs"]
+
+[source,haskell]
+!(ancestorNameContains ["temp", "tmp"])
+
+These functions operate on all ancestor directories of the file (this includes the direct parents) and assess whether _any_ ancestor directory matches the provided string(s). The `Is`, `StartsWith`, `EndsWith` and `Contains` variants match in the same way as xref:#name-related[nameIs] and its variants, above.
+
+== FAQ
+
+== [[why-not-directories]]Why filter files, but not directories?
+Filtering on both files and directories means that some intermediationg has to occur between the directory-level filtering and the file-level filtering. For example, what should happen if a file has been set to be included, but its directory has not? To avoid dealing with this kind of situation, tree-surgeon filters by files only. This then determines which directories are included/excluded: any directory with an included file is itself included, and empty directories are excluded. This is behaviour consistent with version control systems such as git or mercurial.
+
+== [[why-include-not-exclude]]Why include, not exclude?
+Applying the filter `nameIs "test-file"` will _include only files named test-file_. This might be unintuitive to those used to filters excluding, such as `.gitignore`. Versus excluding, including is a much more robust way to capture what you want from a directory tree, but tends to be more verbose, as there's usually less stuff that needs excluding, than including. Tree surgeon aims to have the robustness of including files, but without this verbosity. Note that any filter can be inverted by using the `!` operator, eg `!nameIs "test-file"`
+

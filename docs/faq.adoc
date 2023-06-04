@@ -1,8 +1,8 @@
 = Occasionally Asked Questions
 
-== [[why-not-directories]]Why does tree surgeon filter files, but not directories?
+== [[why-not-directories]]Why filter files, but not directories?
 Filtering on both files and directories means that some intermediationg has to occur between the directory-level filtering and the file-level filtering. For example, what should happen if a file has been set to be included, but its directory has not? To avoid dealing with this kind of situation, tree-surgeon filters by files only. This then determines which directories are included/excluded: any directory with an included file is itself included, and empty directories are excluded. This is behaviour consistent with version control systems such as git or mercurial.
 
-== [[why-include-not-exclude]]Why do tree surgeon's filters assume inclusion, not exclusion?
+== [[why-include-not-exclude]]Why include, not exclude?
 Applying the filter `nameIs "test-file"` will _include only files named test-file_. This might be unintuitive to those used to filters excluding, such as `.gitignore`. Versus excluding, including is a much more robust way to capture what you want from a directory tree, but tends to be more verbose, as there's usually less stuff that needs excluding, than including. Tree surgeon aims to have the robustness of including files, but without this verbosity. Note that any filter can be inverted by using the `!` operator, eg `!nameIs "test-file"`
 

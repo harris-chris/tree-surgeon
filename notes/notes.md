@@ -1,3 +1,4 @@
+
 What if you want to get rid of all folders named ".cache"? It's easy to empty those folders but not to remove the folders themselves.
 
 Desired examples:
