@@ -19,6 +19,8 @@ import AST
 %lexer { lexer } { L.RangedToken L.EOF _ }
 
 %token
+-- Identifiers
+  identifier 			{ L.RangedToken (L.Identifier _) _ }
 -- Operators
   '|'        			{ L.RangedToken L.Or _ }
   '&'				{ L.RangedToken L.And _ }
@@ -73,10 +75,10 @@ listParse(typ) :: { [Exp L.Range] }
   | 		       		{ [] }
 
 name :: { Name L.Range }
-  : name { unTok $1 (\range (L.String str) -> Name range str) }
+  : identifier { unTok $1 (\range (L.String str) -> Name range str) }
 
 dec :: { Dec L.Range }
-  : let name '=' exp { Dec (L.rtRange $1 <-> info $4) $2 [] Nothing $4 }
+  : let name '=' exp { Dec (L.rtRange $1 <-> info $4) $2 $4 }
 
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }

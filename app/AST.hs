@@ -1,6 +1,8 @@
 module AST
   (
     Exp(..)
+    , Dec(..)
+    , Name(..)
     , FsObjData(..)
     , IsMatcher(..)
     , IsFilePath(..)
@@ -63,7 +65,7 @@ data Name a
     deriving (Foldable, Show)
 
 data Dec a
-  = Dec a (Name a) [Argument a] (Maybe (Type a)) (Exp a)
+  = Dec a (Name a) (Exp a)
   deriving (Foldable, Show)
 
 data Exp a =
