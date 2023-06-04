@@ -58,6 +58,14 @@ instance IsFilePath FsObjData where
 class Show a => IsMatcher a where
     getMatcher :: a -> MatcherE a
 
+data Name a
+    = Name a ByteString
+    deriving (Foldable, Show)
+
+data Dec a
+  = Dec a (Name a) [Argument a] (Maybe (Type a)) (Exp a)
+  deriving (Foldable, Show)
+
 data Exp a =
     Or a (Exp a) (Exp a)
     | And a (Exp a) (Exp a)
@@ -72,6 +80,7 @@ data Exp a =
     | NameContains a (Exp a)
     | All a
     | None a
+    | EVar a (Name a)
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]

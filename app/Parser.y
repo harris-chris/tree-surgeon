@@ -35,6 +35,9 @@ import AST
   all 				{ L.RangedToken L.All _ }
   none 				{ L.RangedToken L.None _ }
 -- Syntax
+  let 				{ L.RangedToken L.Let _ }
+  '=' 				{ L.RangedToken L.Eq _ }
+  in 				{ L.RangedToken L.In _ }
   '('        			{ L.RangedToken L.LPar _ }
   ')'        			{ L.RangedToken L.RPar _ }
 -- List
@@ -55,6 +58,9 @@ import AST
 %left nameStartsWith
 %left nameEndsWith
 %left nameContains
+%left let
+%left '='
+%left in
 %left all
 %left none
 
@@ -66,6 +72,12 @@ listParse(typ) :: { [Exp L.Range] }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 
+name :: { Name L.Range }
+  : name { unTok $1 (\range (L.String str) -> Name range str) }
+
+dec :: { Dec L.Range }
+  : let name '=' exp { Dec (L.rtRange $1 <-> info $4) $2 [] Nothing $4 }
+
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
   | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
@@ -74,6 +86,7 @@ exp :: { Exp L.Range }
   | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameEndsWith exp  	{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameContains exp  	{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
+  | name       			{ EVar (info $1) $1 }
   | nameIs exp 			{ NameIs (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }

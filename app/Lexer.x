@@ -40,6 +40,9 @@ tokens :-
 <0> all         		{ tok All }
 <0> none 		      	{ tok None }
 -- Syntax
+<0> "let"			{ tok Let }
+<0> "="				{ tok Eq }
+<0> "in"			{ tok In }
 <0> "("     			{ tok LPar }
 <0> ")"     			{ tok RPar }
 -- List
@@ -89,9 +92,13 @@ tokString inp@(_, _, str, _) len =
     }
 
 data Token
-  = Or
+  -- Identiifers
+  = Identifier ByteString
+  -- Logical Operators
+  | Or
   | And
   | Not
+  -- Matchers
   | AncestorNameIs
   | AncestorNameStartsWith
   | AncestorNameEndsWith
@@ -102,13 +109,21 @@ data Token
   | NameContains
   | All
   | None
+  -- Constants
   | String ByteString
+  -- Keywords
+  | Let
+  | Eq
+  | In
+  -- Parentheses
   | LPar
   | RPar
-  | EOF
+  -- Lists
   | LBrack
   | RBrack
   | Comma
+  -- EOF
+  | EOF
   deriving (Eq, Show)
 
 mkRange :: AlexInput -> Int64 -> Range
