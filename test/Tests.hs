@@ -207,6 +207,7 @@ main = hspec $ do
                             (sort $ (flatFilesOnly a) ++ (flatFilesOnly b))
                             `shouldBe` sort (flatFilesOnly orig)
             applyTwoFiltersAndCompare testDataPath str notStr compareF
+
     describe "Combinations of expressions" $ do
         it "Correctly executes exp | exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -249,6 +250,7 @@ main = hspec $ do
         --     let testStr = "isNotAToken is not a valid expression"
         --     applyFilterWith testDataPath testStr ( putStrLn . show ) `shouldThrow`
         --         (== Couldn'tLex (show testStr))
+
     describe "Let expressions" $ do
         it "Correctly executes let {matcher} in {matcher}" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -256,6 +258,7 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "let isCpp = (nameIs \".cpp\") in isCpp"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
+
     describe "Bash array functions" $ do
         it "Correctly includes" $ do
             let testStr = "nameEndsWith [\"cpp\"]"

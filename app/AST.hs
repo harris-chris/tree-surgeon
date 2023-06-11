@@ -1,10 +1,12 @@
+{-# LANGUAGE DeriveTraversable  #-}
+
 module AST
   (
     Exp(..)
-    , Dec(..)
-    , Name(..)
+    -- , Dec(..)
+    , VarName(..)
     , FsObjData(..)
-    , IsMatcher(..)
+    , IsExp(..)
     , IsFilePath(..)
     , TreeSurgeonException(..)
     , Matcher
@@ -14,6 +16,7 @@ import Control.Exception
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.ByteString.Char8 (isInfixOf)
+import Data.Traversable
 import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
@@ -28,7 +31,8 @@ data TreeSurgeonException
     | NameMatcherNeedsString String
     | AncestorNameIsNeedsString String
     | CanOnlyFilterDirectory String
-    | UnrecognizedName String String
+    | UnrecognizedName String
+    | DuplicateName String String
     deriving (Eq)
 
 instance Exception TreeSurgeonException
@@ -47,9 +51,12 @@ instance Show TreeSurgeonException where
     show (CanOnlyFilterDirectory fpath) =
         "Error: unable to filter " <> (show fpath) <>
         "; it is a file, not a directory"
-    show (UnrecognizedName dec name) =
+    show (UnrecognizedName name) =
         "Error: Unrecognized name " <> name
+    show (DuplicateName dec name) =
+        "Error: name " <> name
         <> " in declaration " <> dec
+        <> " already exists"
 
 data FsObjData =
     FileData { parents :: [ByteString] }
@@ -61,19 +68,19 @@ class IsFilePath a where
 instance IsFilePath FsObjData where
     toFilePath (FileData pts) = joinPath $ BS.unpack <$> pts
 
-class Show a => IsMatcher a where
-    getMatcher :: a -> MatcherE a
+type NamedExpr a = (VarName a, Exp a)
 
-data Name a
-    = Name a ByteString
-    deriving (Foldable, Show)
+class Show exp => IsExp exp where
+    getMatcher :: exp -> MatcherE exp
+    -- deName :: [NamedExpr a] -> exp -> Either TreeSurgeonException exp
 
-instance Eq (Name a) where
-    (==) (Name _ x) (Name _ y) = x == y
+data VarName a
+    = VarName a ByteString
+    deriving (Foldable, Functor, Show, Traversable)
 
-data Dec a
-  = Let a (Name a) (Exp a) (Exp a)
-  deriving (Foldable, Show)
+-- data Dec a
+--   = Let (VarName a) (Exp a) (Exp a)
+--   deriving (Foldable, Show)
 
 data Exp a =
     Or a (Exp a) (Exp a)
@@ -89,14 +96,49 @@ data Exp a =
     | NameContains a (Exp a)
     | All a
     | None a
-    | EVar a (Name a)
+    | EVar a (VarName a)
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
-    | Declaration (Dec a)
-    deriving (Foldable, Show)
+    | Let a (VarName a) (Exp a) (Exp a)
+    deriving (Foldable, Functor, Show, Traversable)
 
-instance Show a => IsMatcher (Exp a) where
+-- instance Traversable Exp where
+--     traverse f (Or a x y) = Or <$> (f a) <*> (traverse f x) <*> (traverse f y)
+--     traverse f (And a x y) = And <$> (f a) <*> (traverse f x) <*> (traverse f y)
+--     traverse f (Not a x) = Not <$> (f a) <*> (traverse f x)
+--     traverse f (AncestorNameIs a x) = AncestorNameIs <$> (f a) <*> (traverse f x)
+--     traverse f (AncestorNameStartsWith a x) = AncestorNameStartsWith <$> (f a) <*> (traverse f x)
+--     traverse f (AncestorNameEndsWith a x) = AncestorNameEndsWith <$> (f a) <*> (traverse f x)
+--     traverse f (AncestorNameContains a x) = AncestorNameContains <$> (f a) <*> (traverse f x)
+--     traverse f (NameIs a x) = NameIs <$> (f a) <*> (traverse f x)
+--     traverse f (NameStartsWith a x) = NameStartsWith <$> (f a) <*> (traverse f x)
+--     traverse f (NameEndsWith a x) = NameEndsWith <$> (f a) <*> (traverse f x)
+--     traverse f (NameContains a x) = NameContains <$> (f a) <*> (traverse f x)
+--     traverse f (All a) = All <$> (f a)
+--     traverse f (None a) = None <$> (f a)
+--     traverse f (EVar a x) = EVar <$> (f a) <*> (pure x)
+--     traverse f (EPar a x) = EPar <$> (f a) <*> (traverse f x)
+--     traverse f (EString a x) = EString <$> (f a) <*> (pure x)
+--     traverse f (EList a []) = EList <$> (f a) <*> (pure [])
+--     traverse f (EList a (x:xs)) = EList <$> (f a) <*> (traverse f (x:xs))
+--     traverse f (Let a name namedExpr expr) =
+--         Let <$> (f a) <*> (pure name) <*> (traverse f namedExpr) <*> (traverse f expr)
+
+instance Show a => IsExp (Exp a) where
+    -- deName [nameDefs] (Declaration dec@(Let _ name namedExp exp)) =
+    --     let matches = filter (\named -> (fst named) == name) nameDefs
+    --     in case matches of
+    --         [] -> let nameDefs' = (name namedExp):nameDefs
+    --               in Right $ deName nameDefs' exp
+    --         _:_ -> Left $ DuplicateName (show dec) (show name)
+    -- deName [nameDefs] (EVar _ name@(VarName _ nmStr)) =
+    --     let matches = filter (\named -> (fst named) == name) nameDefs
+    --     in case matches of
+    --         [] -> Left $ UnrecognizedName (show name)
+    --         [namedExpr] -> Right $ snd namedExpr
+    -- deName [nameDefs] exp = traverse (deName [nameDefs]) exp
+
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
@@ -133,7 +175,7 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (EVar _ _) =
         error "EVar encountered in getMatcher processing; please run deName first"
     getMatcher (EPar _ x) = getMatcher x
-    getMatcher (Declaration _) =
+    getMatcher (Let _ _ _ _) =
         error "Let encountered in getMatcher processing; please run deName first"
     getMatcher exp = Left $ Couldn'tParse $ show exp
 

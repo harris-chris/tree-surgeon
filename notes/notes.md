@@ -1,3 +1,10 @@
+`traverse` wants to change the type parameter of Exp, eg from Exp L.Range -> Exp Integer
+This isn't what we actually want, we don't want to change Exp at the type level.
+
+for us to apply `deName` via traverse, I think we have to apply it like:
+`Exp a` -> `Exp [((VarName a) (Expr a))]`
+where `f` is of type `a -> [nameDefs]`
+
 We want to have `let x=y in z` and `let a=b; c=d in a=c` as expressions, but by the time that we get to the getMatcher function, we want them to be gone.
 So we need getMatcher (Dec a) to error.
 

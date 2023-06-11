@@ -21,7 +21,7 @@ data HappyAbsSyn
 	= HappyTerminal (L.RangedToken)
 	| HappyErrorToken Prelude.Int
 	| HappyAbsSyn4 (Exp L.Range)
-	| HappyAbsSyn5 (Name L.Range)
+	| HappyAbsSyn5 (VarName L.Range)
 	| HappyAbsSyn7 ([Exp L.Range])
 
 {- to allow type-synonyms as our monads (likely
@@ -745,7 +745,7 @@ happyReduction_18 _  = notHappyAtAll
 happyReduce_19 = happySpecReduce_1  5 happyReduction_19
 happyReduction_19 (HappyTerminal happy_var_1)
 	 =  HappyAbsSyn5
-		 (unTok happy_var_1 (\range (L.Identifier name) -> Name range name)
+		 (unTok happy_var_1 (\range (L.Identifier nm) -> VarName range nm)
 	)
 happyReduction_19 _  = notHappyAtAll 
 
@@ -758,7 +758,7 @@ happyReduction_20 ((HappyAbsSyn4  happy_var_6) `HappyStk`
 	(HappyTerminal happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn4
-		 (Declaration (Let (L.rtRange happy_var_1 <-> info happy_var_6) happy_var_2 happy_var_4 happy_var_6)
+		 (Let (L.rtRange happy_var_1 <-> info happy_var_6) happy_var_2 happy_var_4 happy_var_6
 	) `HappyStk` happyRest
 
 happyReduce_21 = happySpecReduce_3  7 happyReduction_21

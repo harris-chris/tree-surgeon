@@ -77,7 +77,7 @@ exp :: { Exp L.Range }
   | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameEndsWith exp  	{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameContains exp  	{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
-  | name       			{ EVar (info $1) $1 }
+  | name 	       		{ EVar (info $1) $1 }
   | nameIs exp 			{ NameIs (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
@@ -89,8 +89,8 @@ exp :: { Exp L.Range }
   | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | dec 			{ $1 }
 
-name :: { Name L.Range }
-  : identifier { unTok $1 (\range (L.Identifier name) -> Name range name) }
+name :: { VarName L.Range }
+  : identifier { unTok $1 (\range (L.Identifier nm) -> VarName range nm) }
 
 listParse(typ) :: { [Exp L.Range] }
   : listParse(typ) ',' typ 	{ $3 : $1 }
@@ -99,7 +99,7 @@ listParse(typ) :: { [Exp L.Range] }
   | 		       		{ [] }
 
 dec :: { Exp L.Range }
-  : let name '=' exp in exp { Declaration (Let (L.rtRange $1 <-> info $6) $2 $4 $6) }
+  : let name '=' exp in exp { Let (L.rtRange $1 <-> info $6) $2 $4 $6 }
 
 {
 
