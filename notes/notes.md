@@ -1,3 +1,9 @@
+We want to have `let x=y in z` and `let a=b; c=d in a=c` as expressions, but by the time that we get to the getMatcher function, we want them to be gone.
+So we need getMatcher (Dec a) to error.
+
+So we have a deName function, which removes all the lets, and then a let throws an error in the getMatcher function.
+
+Could we re-write this whole thing using Morte?
 
 What if you want to get rid of all folders named ".cache"? It's easy to empty those folders but not to remove the folders themselves.
 

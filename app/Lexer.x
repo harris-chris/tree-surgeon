@@ -23,11 +23,13 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 tokens :-
 
-<0> $white+ 			{ skip }
+<0> $white+ 							{ skip }
+-- Identifiers
+<0> ([a-zA-Z] | \_) ([a-zA-Z] | [0-9] | \_ | \' | \?)* 		{ tokIdentifier }
 -- Operators
-<0> "|"				{ tok Or }
-<0> "&"				{ tok And }
-<0> "!"				{ tok Not }
+<0> "|"								{ tok Or }
+<0> "&"								{ tok And }
+<0> "!"								{ tok Not }
 -- Matchers
 <0> ancestorNameIs		{ tok AncestorNameIs }
 <0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
@@ -88,6 +90,12 @@ tok ctor inp len =
 tokString inp@(_, _, str, _) len =
   pure RangedToken
     { rtToken = String $ BS.take len str
+    , rtRange = mkRange inp len
+    }
+
+tokIdentifier inp@(_, _, str, _) len =
+  pure RangedToken
+    { rtToken = Identifier $ BS.take len str
     , rtRange = mkRange inp len
     }
 

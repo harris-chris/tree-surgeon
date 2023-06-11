@@ -28,6 +28,7 @@ data TreeSurgeonException
     | NameMatcherNeedsString String
     | AncestorNameIsNeedsString String
     | CanOnlyFilterDirectory String
+    | UnrecognizedName String String
     deriving (Eq)
 
 instance Exception TreeSurgeonException
@@ -46,6 +47,9 @@ instance Show TreeSurgeonException where
     show (CanOnlyFilterDirectory fpath) =
         "Error: unable to filter " <> (show fpath) <>
         "; it is a file, not a directory"
+    show (UnrecognizedName dec name) =
+        "Error: Unrecognized name " <> name
+        <> " in declaration " <> dec
 
 data FsObjData =
     FileData { parents :: [ByteString] }
@@ -64,8 +68,11 @@ data Name a
     = Name a ByteString
     deriving (Foldable, Show)
 
+instance Eq (Name a) where
+    (==) (Name _ x) (Name _ y) = x == y
+
 data Dec a
-  = Dec a (Name a) (Exp a)
+  = Let a (Name a) (Exp a) (Exp a)
   deriving (Foldable, Show)
 
 data Exp a =
@@ -86,6 +93,7 @@ data Exp a =
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
+    | Declaration (Dec a)
     deriving (Foldable, Show)
 
 instance Show a => IsMatcher (Exp a) where
@@ -123,7 +131,13 @@ instance Show a => IsMatcher (Exp a) where
     getMatcher (All _) = Right (\_ _ -> True)
     getMatcher (None _) = Right (\_ _ -> False)
     getMatcher (EPar _ x) = getMatcher x
+    getMatcher (Declaration _) =
+        error "Let encountered in getMatcher processing; please run deName first"
     getMatcher exp = Left $ Couldn'tParse $ show exp
+
+        -- if innerName == outerName
+        --     then getMatcher namedExpr
+        --     else Left $ UnrecognizedName (show dec) (show outerName)
 
 matchersToMatcherWithAny :: (Exp a -> MatcherE a) -> [Exp a] -> MatcherE a
 matchersToMatcherWithAny f exps =

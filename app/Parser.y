@@ -65,20 +65,9 @@ import AST
 %left in
 %left all
 %left none
+%left name
 
 %%
-
-listParse(typ) :: { [Exp L.Range] }
-  : listParse(typ) ',' typ 	{ $3 : $1 }
-  | listParse(typ) ','		{ $1 }
-  | typ 			{ [ $1 ] }
-  | 		       		{ [] }
-
-name :: { Name L.Range }
-  : identifier { unTok $1 (\range (L.String str) -> Name range str) }
-
-dec :: { Dec L.Range }
-  : let name '=' exp { Dec (L.rtRange $1 <-> info $4) $2 $4 }
 
 exp :: { Exp L.Range }
   : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
@@ -98,6 +87,20 @@ exp :: { Exp L.Range }
   | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | dec 			{ $1 }
+
+name :: { Name L.Range }
+  : identifier { unTok $1 (\range (L.Identifier name) -> Name range name) }
+
+listParse(typ) :: { [Exp L.Range] }
+  : listParse(typ) ',' typ 	{ $3 : $1 }
+  | listParse(typ) ','		{ $1 }
+  | typ 			{ [ $1 ] }
+  | 		       		{ [] }
+
+dec :: { Exp L.Range }
+  : let name '=' exp in exp { Declaration (Let (L.rtRange $1 <-> info $6) $2 $4 $6) }
+
 {
 
 -- | Remove quote marks from a string
