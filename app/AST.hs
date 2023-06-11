@@ -130,6 +130,8 @@ instance Show a => IsMatcher (Exp a) where
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
     getMatcher (All _) = Right (\_ _ -> True)
     getMatcher (None _) = Right (\_ _ -> False)
+    getMatcher (EVar _ _) =
+        error "EVar encountered in getMatcher processing; please run deName first"
     getMatcher (EPar _ x) = getMatcher x
     getMatcher (Declaration _) =
         error "Let encountered in getMatcher processing; please run deName first"

@@ -24,8 +24,6 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 tokens :-
 
 <0> $white+ 							{ skip }
--- Identifiers
-<0> ([a-zA-Z] | \_) ([a-zA-Z] | [0-9] | \_ | \' | \?)* 		{ tokIdentifier }
 -- Operators
 <0> "|"								{ tok Or }
 <0> "&"								{ tok And }
@@ -55,6 +53,8 @@ tokens :-
 <0> \"[^\"]*\" 			{ tokString }
 -- Comments
 <0> "--" .*\n 			{ skip }
+-- Identifiers
+<0> ([a-zA-Z] | \_) ([a-zA-Z] | [0-9] | \_ | \' | \?)* 		{ tokIdentifier }
 
 {
 -- At the bottom, we may insert more Haskell definitions, such as data structures, auxiliary functions, etc.

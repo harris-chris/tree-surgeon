@@ -49,6 +49,7 @@ import AST
 -- Values
   string     			{ L.RangedToken (L.String _) _ }
 
+%right name
 %left '|'
 %left '&'
 %left '!'
@@ -62,10 +63,9 @@ import AST
 %left nameContains
 %left let
 %left '='
-%left in
+%right in
 %left all
 %left none
-%left name
 
 %%
 
