@@ -1,5 +1,27 @@
-`traverse` wants to change the type parameter of Exp, eg from Exp L.Range -> Exp Integer
-This isn't what we actually want, we don't want to change Exp at the type level.
+I think both namedExprs and Exp needs to be part of the state.
+Or else how else do you pass in `Exp`? No, you just have the `runState` function take the parameter
+
+So perhaps we want `runState`, then call `traverse` within `runState`:
+runState is of type
+`runState do-block initial`
+within `do-block` we would call `deNameF`, a non-monadic function. We would need to call it using `traverse` or something similar.
+
+mapM operates on the actual type parameter, ie `L.Range`. this isn't what we want, because we want to alter `Exp`'s non-paramaterized attributes
+
+I think you need to run the traverse in runState, rather than vice-versa. Otherwise `get` and `put` should logically not be available. But not quite sure.
+
+The state monad is like, you run your functions within it, eg `runState (myFunc someParam)`, and then within that function you can get `get` and `put` to alter the state.
+This is kind of neat, not yet sure how it combines with `traverse`.
+
+traverse is expecting a function `a -> f b`
+so `a` is `Exp a`
+`b` is `Either TreeSurgeonException (Exp a)`
+so `f b` is `State [NamedExpr] (Either TreeSurgeonException (Exp a))`
+
+traverse can't affect the structure. So we can't collapse away `Let` expressions. We could just resolve the names within them and then ignore them from then on in.
+Or we could have a second pass using `foldable` that gets rid of them, I think.
+
+`Traversable` is now implemented for `Exp`. Use this to apply deName.
 
 for us to apply `deName` via traverse, I think we have to apply it like:
 `Exp a` -> `Exp [((VarName a) (Expr a))]`

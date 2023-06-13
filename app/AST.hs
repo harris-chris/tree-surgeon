@@ -16,6 +16,7 @@ import Control.Exception
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.ByteString.Char8 (isInfixOf)
+import Control.Monad.State.Lazy
 import Data.Traversable
 import Debug.Trace
 import System.FilePath
@@ -76,7 +77,7 @@ class Show exp => IsExp exp where
 
 data VarName a
     = VarName a ByteString
-    deriving (Foldable, Functor, Show, Traversable)
+    deriving (Eq, Foldable, Functor, Show, Traversable)
 
 -- data Dec a
 --   = Let (VarName a) (Exp a) (Exp a)
@@ -125,20 +126,31 @@ data Exp a =
 --     traverse f (Let a name namedExpr expr) =
 --         Let <$> (f a) <*> (pure name) <*> (traverse f namedExpr) <*> (traverse f expr)
 
-instance Show a => IsExp (Exp a) where
-    -- deName [nameDefs] (Declaration dec@(Let _ name namedExp exp)) =
-    --     let matches = filter (\named -> (fst named) == name) nameDefs
-    --     in case matches of
-    --         [] -> let nameDefs' = (name namedExp):nameDefs
-    --               in Right $ deName nameDefs' exp
-    --         _:_ -> Left $ DuplicateName (show dec) (show name)
-    -- deName [nameDefs] (EVar _ name@(VarName _ nmStr)) =
-    --     let matches = filter (\named -> (fst named) == name) nameDefs
-    --     in case matches of
-    --         [] -> Left $ UnrecognizedName (show name)
-    --         [namedExpr] -> Right $ snd namedExpr
-    -- deName [nameDefs] exp = traverse (deName [nameDefs]) exp
+deName :: (Eq a, Show a) => Exp a -> Either TreeSurgeonException (Exp a)
+deName exp = evalState (deName' exp) []
 
+deName' :: (Eq a, Show a) => Exp a -> State [NamedExpr a] (Either TreeSurgeonException (Exp a))
+deName' exp = do
+    namedExprs <- get
+    let (namedExprs', exp') = deNameF namedExprs exp
+    put namedExprs'
+    return exp'
+
+deNameF :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> ([NamedExpr a], (Either TreeSurgeonException (Exp a)))
+deNameF nameDefs dec@(Let _ name namedExp exp) =
+    let matches = filter (\named -> (fst named) == name) nameDefs
+    in case matches of
+        [] -> let nameDefs' = (name, namedExp):nameDefs
+              in (nameDefs', Right exp)
+        _:_ -> (nameDefs, Left $ DuplicateName (show dec) (show name))
+deNameF nameDefs (EVar _ name@(VarName _ nmStr)) =
+    let matches = filter (\named -> (fst named) == name) nameDefs
+    in case matches of
+        [] -> (nameDefs, Left $ UnrecognizedName (show name))
+        [namedExpr] -> (nameDefs, Right $ snd namedExpr)
+deNameF nameDefs exp = (nameDefs, Right exp)
+
+instance Show a => IsExp (Exp a) where
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
