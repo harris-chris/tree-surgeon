@@ -98,6 +98,12 @@ listParse(typ) :: { [Exp L.Range] }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 
+# decListParse(typ) :: { [Exp L.Range] }
+#   : listParse(typ) typ 		{ $2 : $1 }
+#   | listParse(typ)		{ $1 }
+#   | typ 			{ [ $1 ] }
+#   | 		       		{ [] }
+
 dec :: { Exp L.Range }
   : let name '=' exp in exp { Let (L.rtRange $1 <-> info $6) $2 $4 $6 }
 

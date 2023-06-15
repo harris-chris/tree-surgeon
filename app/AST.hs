@@ -33,7 +33,7 @@ data TreeSurgeonException
     | NameMatcherNeedsString String
     | AncestorNameIsNeedsString String
     | CanOnlyFilterDirectory String
-    | UnrecognizedName [String] String
+    | UnrecognizedName [ByteString] String
     | DuplicateName String String
     deriving (Eq)
 
@@ -56,7 +56,7 @@ instance Show TreeSurgeonException where
     show (UnrecognizedName varsInScope name) =
         "Error: Unrecognized name " <> name
         <> "; have names "
-        <> (intercalate " " varsInScope)
+        <> (intercalate " " $ BS.unpack <$> varsInScope)
         <> " in scope"
     show (DuplicateName dec name) =
         "Error: name " <> name
@@ -73,8 +73,6 @@ class IsFilePath a where
 instance IsFilePath FsObjData where
     toFilePath (FileData pts) = joinPath $ BS.unpack <$> pts
 
-type NamedExpr a = (VarName a, Exp a)
-
 class Show exp => IsExp exp where
     getMatcher :: exp -> MatcherE exp
     deName :: exp -> Either TreeSurgeonException exp
@@ -82,6 +80,11 @@ class Show exp => IsExp exp where
 data VarName a
     = VarName a ByteString
     deriving (Eq, Foldable, Functor, Show, Traversable)
+
+data NamedExpr a
+    = NamedExpr
+        { varName :: ByteString
+        , namedExp :: Exp a }
 
 -- data Dec a
 --   = Let (VarName a) (Exp a) (Exp a)
@@ -112,18 +115,18 @@ deNameExp :: (Show a, Eq a) => Exp a -> Either TreeSurgeonException (Exp a)
 deNameExp exp = deName' [] exp
 
 deName' :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TreeSurgeonException (Exp a)
-deName' nameDefs dec@(Let _ name@(VarName _ nmStr) namedExp exp) =
-    let matches = filter (\n -> case fst n of (VarName _ nm) -> nm == nmStr) nameDefs
+deName' nameDefs dec@(Let _ name@(VarName _ nmStr) innerExp exp) =
+    let matches = filter (\n -> varName n == nmStr) nameDefs
     in case matches of
-        [] -> let nameDefs' = (name, namedExp):nameDefs
+        [] -> let nameDefs' = (NamedExpr nmStr innerExp):nameDefs
               in deName' nameDefs' exp
         _:_ -> Left $ DuplicateName (show dec) (show name)
 deName' nameDefs (EVar _ name@(VarName _ nmStr)) =
-    let matches = filter (\n -> case fst n of (VarName _ nm) -> nm == nmStr) nameDefs
+    let matches = filter (\n -> varName n == nmStr) nameDefs
     in case matches of
-        [] -> let varsInScope = (show . fst) <$> nameDefs
-              in Left $ UnrecognizedName varsInScope (show name)
-        [namedExpr] -> let expr = snd namedExpr
+        [] -> let varsInScope = varName <$> nameDefs
+              in Left $ UnrecognizedName varsInScope (show nmStr)
+        [x] -> let expr = namedExp x
                        in deName' nameDefs expr
 deName' nameDefs (Or a x y) = Or a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
 deName' nameDefs (And a x y) = And a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
