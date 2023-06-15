@@ -256,7 +256,7 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            let testStr = "let isCpp = (nameIs \".cpp\") in isCpp"
+            let testStr = "let isCpp = (nameEndsWith \".cpp\") in isCpp"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
     describe "Bash array functions" $ do

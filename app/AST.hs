@@ -17,6 +17,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.ByteString.Char8 (isInfixOf)
 import Control.Monad.State.Lazy
+import Data.List (intercalate)
 import Data.Traversable
 import Debug.Trace
 import System.FilePath
@@ -32,7 +33,7 @@ data TreeSurgeonException
     | NameMatcherNeedsString String
     | AncestorNameIsNeedsString String
     | CanOnlyFilterDirectory String
-    | UnrecognizedName String
+    | UnrecognizedName [String] String
     | DuplicateName String String
     deriving (Eq)
 
@@ -52,8 +53,11 @@ instance Show TreeSurgeonException where
     show (CanOnlyFilterDirectory fpath) =
         "Error: unable to filter " <> (show fpath) <>
         "; it is a file, not a directory"
-    show (UnrecognizedName name) =
+    show (UnrecognizedName varsInScope name) =
         "Error: Unrecognized name " <> name
+        <> "; have names "
+        <> (intercalate " " varsInScope)
+        <> " in scope"
     show (DuplicateName dec name) =
         "Error: name " <> name
         <> " in declaration " <> dec
@@ -73,7 +77,7 @@ type NamedExpr a = (VarName a, Exp a)
 
 class Show exp => IsExp exp where
     getMatcher :: exp -> MatcherE exp
-    -- deName :: [NamedExpr a] -> exp -> Either TreeSurgeonException exp
+    deName :: exp -> Either TreeSurgeonException exp
 
 data VarName a
     = VarName a ByteString
@@ -104,53 +108,32 @@ data Exp a =
     | Let a (VarName a) (Exp a) (Exp a)
     deriving (Foldable, Functor, Show, Traversable)
 
--- instance Traversable Exp where
---     traverse f (Or a x y) = Or <$> (f a) <*> (traverse f x) <*> (traverse f y)
---     traverse f (And a x y) = And <$> (f a) <*> (traverse f x) <*> (traverse f y)
---     traverse f (Not a x) = Not <$> (f a) <*> (traverse f x)
---     traverse f (AncestorNameIs a x) = AncestorNameIs <$> (f a) <*> (traverse f x)
---     traverse f (AncestorNameStartsWith a x) = AncestorNameStartsWith <$> (f a) <*> (traverse f x)
---     traverse f (AncestorNameEndsWith a x) = AncestorNameEndsWith <$> (f a) <*> (traverse f x)
---     traverse f (AncestorNameContains a x) = AncestorNameContains <$> (f a) <*> (traverse f x)
---     traverse f (NameIs a x) = NameIs <$> (f a) <*> (traverse f x)
---     traverse f (NameStartsWith a x) = NameStartsWith <$> (f a) <*> (traverse f x)
---     traverse f (NameEndsWith a x) = NameEndsWith <$> (f a) <*> (traverse f x)
---     traverse f (NameContains a x) = NameContains <$> (f a) <*> (traverse f x)
---     traverse f (All a) = All <$> (f a)
---     traverse f (None a) = None <$> (f a)
---     traverse f (EVar a x) = EVar <$> (f a) <*> (pure x)
---     traverse f (EPar a x) = EPar <$> (f a) <*> (traverse f x)
---     traverse f (EString a x) = EString <$> (f a) <*> (pure x)
---     traverse f (EList a []) = EList <$> (f a) <*> (pure [])
---     traverse f (EList a (x:xs)) = EList <$> (f a) <*> (traverse f (x:xs))
---     traverse f (Let a name namedExpr expr) =
---         Let <$> (f a) <*> (pure name) <*> (traverse f namedExpr) <*> (traverse f expr)
+deNameExp :: (Show a, Eq a) => Exp a -> Either TreeSurgeonException (Exp a)
+deNameExp exp = deName' [] exp
 
-deName :: (Eq a, Show a) => Exp a -> Either TreeSurgeonException (Exp a)
-deName exp = evalState (deName' exp) []
-
-deName' :: (Eq a, Show a) => Exp a -> State [NamedExpr a] (Either TreeSurgeonException (Exp a))
-deName' exp = do
-    namedExprs <- get
-    let (namedExprs', exp') = deNameF namedExprs exp
-    put namedExprs'
-    return exp'
-
-deNameF :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> ([NamedExpr a], (Either TreeSurgeonException (Exp a)))
-deNameF nameDefs dec@(Let _ name namedExp exp) =
-    let matches = filter (\named -> (fst named) == name) nameDefs
+deName' :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TreeSurgeonException (Exp a)
+deName' nameDefs dec@(Let _ name@(VarName _ nmStr) namedExp exp) =
+    let matches = filter (\n -> case fst n of (VarName _ nm) -> nm == nmStr) nameDefs
     in case matches of
         [] -> let nameDefs' = (name, namedExp):nameDefs
-              in (nameDefs', Right exp)
-        _:_ -> (nameDefs, Left $ DuplicateName (show dec) (show name))
-deNameF nameDefs (EVar _ name@(VarName _ nmStr)) =
-    let matches = filter (\named -> (fst named) == name) nameDefs
+              in deName' nameDefs' exp
+        _:_ -> Left $ DuplicateName (show dec) (show name)
+deName' nameDefs (EVar _ name@(VarName _ nmStr)) =
+    let matches = filter (\n -> case fst n of (VarName _ nm) -> nm == nmStr) nameDefs
     in case matches of
-        [] -> (nameDefs, Left $ UnrecognizedName (show name))
-        [namedExpr] -> (nameDefs, Right $ snd namedExpr)
-deNameF nameDefs exp = (nameDefs, Right exp)
+        [] -> let varsInScope = (show . fst) <$> nameDefs
+              in Left $ UnrecognizedName varsInScope (show name)
+        [namedExpr] -> let expr = snd namedExpr
+                       in deName' nameDefs expr
+deName' nameDefs (Or a x y) = Or a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
+deName' nameDefs (And a x y) = And a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
+deName' nameDefs (Not a x) = Not a <$> (deName' nameDefs x)
+deName' nameDefs (EPar a x) = EPar a <$> (deName' nameDefs x)
+deName' nameDefs (EList a xs) = EList a <$> mapM (deName' nameDefs) xs
+deName' nameDefs exp = Right $ exp
 
-instance Show a => IsExp (Exp a) where
+instance (Eq a, Show a) => IsExp (Exp a) where
+    deName = deNameExp
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
             (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d

@@ -1,3 +1,9 @@
+The current error message is correct. Using `traverse`, we can change the type parameter but not the hshape or overall parameter. So we can't go from `Exp a` -> `Either TreeSurgeonException (Exp a)`.
+We could go from `Exp a -> Exp (a, Maybe TreeSurgeonException)`.
+
+It might be that foldable is the superior monad to use here. but does it preserve shape?
+it seems that `toList = foldr (:) []` so no it does not preserve shape.
+
 I think both namedExprs and Exp needs to be part of the state.
 Or else how else do you pass in `Exp`? No, you just have the `runState` function take the parameter
 

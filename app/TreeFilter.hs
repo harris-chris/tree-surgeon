@@ -80,7 +80,8 @@ filterTreeWith tree filterStr =
         expE' = (case expE of
             Left errStr -> Left $ Couldn'tLex errStr
             Right exprString -> Right exprString) :: Either TreeSurgeonException (Exp L.Range)
-        matcherE = expE' >>= getMatcher
+        denamedExpE' = deName =<< expE'
+        matcherE = getMatcher =<< denamedExpE'
     in matcherE >>= filterTreeWith' (toElements tree)
 
 filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
