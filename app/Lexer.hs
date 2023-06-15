@@ -564,8 +564,8 @@ alex_base = listArray (0 :: Int, 116)
   , 0
   , 0
   , 0
-  , 0
   , 7102
+  , 0
   , 0
   , 7186
   , 7270
@@ -620,11 +620,11 @@ alex_table = listArray (0 :: Int, 8785)
   , 0
   , 34
   , 52
-  , 97
   , 96
+  , 95
   , 0
   , 0
-  , 93
+  , 0
   , 30
   , 0
   , 0
@@ -639,7 +639,7 @@ alex_table = listArray (0 :: Int, 8785)
   , 0
   , 0
   , 0
-  , 0
+  , 98
   , 0
   , 99
   , 0
@@ -671,9 +671,9 @@ alex_table = listArray (0 :: Int, 8785)
   , 54
   , 54
   , 54
-  , 95
-  , 0
   , 94
+  , 0
+  , 93
   , 0
   , 54
   , 0
@@ -5478,7 +5478,7 @@ alex_table = listArray (0 :: Int, 8785)
   , 54
   , 54
   , 54
-  , 98
+  , 97
   , 54
   , 54
   , 54
@@ -9414,7 +9414,7 @@ alex_check = listArray (0 :: Int, 8785)
   , 41
   , -1
   , -1
-  , 44
+  , -1
   , 45
   , -1
   , -1
@@ -9429,7 +9429,7 @@ alex_check = listArray (0 :: Int, 8785)
   , -1
   , -1
   , -1
-  , -1
+  , 59
   , -1
   , 61
   , -1
@@ -18578,7 +18578,7 @@ data Token
   -- Lists
   | LBrack
   | RBrack
-  | Comma
+  | SemiColon
   -- EOF
   | EOF
   deriving (Eq, Show)
@@ -18612,12 +18612,12 @@ alex_action_12 = tok All
 alex_action_13 = tok None
 alex_action_14 = tok Let
 alex_action_15 = tok Eq
-alex_action_16 = tok In
-alex_action_17 = tok LPar
-alex_action_18 = tok RPar
-alex_action_19 = tok LBrack
-alex_action_20 = tok RBrack
-alex_action_21 = tok Comma
+alex_action_16 = tok SemiColon
+alex_action_17 = tok In
+alex_action_18 = tok LPar
+alex_action_19 = tok RPar
+alex_action_20 = tok LBrack
+alex_action_21 = tok RBrack
 alex_action_22 = tokString
 alex_action_23 = skip
 alex_action_24 = tokIdentifier

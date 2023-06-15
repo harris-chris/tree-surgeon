@@ -42,13 +42,13 @@ tokens :-
 -- Syntax
 <0> "let"			{ tok Let }
 <0> "="				{ tok Eq }
+<0> ";"     			{ tok SemiColon }
 <0> "in"			{ tok In }
 <0> "("     			{ tok LPar }
 <0> ")"     			{ tok RPar }
 -- List
 <0> "["     			{ tok LBrack }
 <0> "]"     			{ tok RBrack }
-<0> ","     			{ tok Comma }
 -- Values
 <0> \"[^\"]*\" 			{ tokString }
 -- Comments
@@ -129,7 +129,7 @@ data Token
   -- Lists
   | LBrack
   | RBrack
-  | Comma
+  | SemiColon
   -- EOF
   | EOF
   deriving (Eq, Show)

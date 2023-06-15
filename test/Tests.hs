@@ -110,7 +110,7 @@ main = hspec $ do
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameIs [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
-            let testStr = "ancestorNameIs [\"a-project\", \"b-library\"]"
+            let testStr = "ancestorNameIs [\"a-project\" \"b-library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameStartsWith string" $ do
             let expected = Dir "test-data" [ treeA ]
@@ -118,7 +118,7 @@ main = hspec $ do
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameStartsWith [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
-            let testStr = "ancestorNameStartsWith [\"a-proj\", \"b-library\"]"
+            let testStr = "ancestorNameStartsWith [\"a-proj\" \"b-library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameEndsWith string" $ do
             let expected = Dir "test-data" [ treeA ]
@@ -126,7 +126,7 @@ main = hspec $ do
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameEndsWith [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
-            let testStr = "ancestorNameEndsWith [\"project\", \"library\"]"
+            let testStr = "ancestorNameEndsWith [\"project\" \"library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameContains string" $ do
             let expected = Dir "test-data" [ treeB ]
@@ -134,7 +134,7 @@ main = hspec $ do
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes ancestorNameContains [string]" $ do
             let expected = Dir "test-data" [ treeA , treeB ]
-            let testStr = "ancestorNameContains [\"lib\",\"proj\"]"
+            let testStr = "ancestorNameContains [\"lib\" \"proj\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameIs string" $ do
             let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
@@ -145,7 +145,7 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
             let treeB' = filterDir (\dt -> (name dt) == "file_b_1.cpp" ) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            let testStr = "nameIs [\"file_a_2.hpp\", \"file_b_1.cpp\"]"
+            let testStr = "nameIs [\"file_a_2.hpp\" \"file_b_1.cpp\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameStartsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
@@ -159,7 +159,7 @@ main = hspec $ do
                           || LBS.isPrefixOf "tr" (LBS.pack $ name dt)
                           ) treeC
             let expected = Dir "test-data" [ treeA' , treeC' ]
-            let testStr = "nameStartsWith [\"docs\", \"tr\"]"
+            let testStr = "nameStartsWith [\"docs\" \"tr\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameEndsWith string" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
@@ -172,7 +172,7 @@ main = hspec $ do
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let treeC' = filterDir (\dt -> LBS.isSuffixOf ".hs" $ LBS.pack $ name dt) treeC
             let expected = Dir "test-data" [ treeA' , treeB' , treeC' ]
-            let testStr = "nameEndsWith [\".cpp\", \".hs\"]"
+            let testStr = "nameEndsWith [\".cpp\" \".hs\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes nameContains string" $ do
             let treeB' = filterDir (\dt -> BS.isInfixOf "file_b" (BS.pack $ name dt)) treeB
@@ -258,6 +258,19 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "let isCpp = (nameEndsWith \".cpp\") in isCpp"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes let {matcher} in ({matcher} & exp)" $ do
+            let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "let isCpp = nameEndsWith \".cpp\""
+                          <> " in ( isCpp & nameStartsWith \"file_a\")"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "Correctly executes let {matcher1} in let {matcher2} in ({matcher1} & {matcher2})" $ do
+            let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "let isCpp = nameEndsWith \".cpp\""
+                          <> " in let isFileA = nameStartsWith \"file_a\""
+                          <> " in (isCpp & isFileA)"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
     describe "Bash array functions" $ do
         it "Correctly includes" $ do
@@ -271,7 +284,7 @@ main = hspec $ do
             let compFunc = \f -> (sort $ toBashArray True f) `shouldBe` (sort expected)
             applyFilterWith testDataPath compFunc testStr
         it "Correctly excludes" $ do
-            let testStr = "nameIs [\"docs.md\", \"tree\"] | nameEndsWith \".hs\""
+            let testStr = "nameIs [\"docs.md\" \"tree\"] | nameEndsWith \".hs\""
             let expected = (normalise . ("test-data" </>)) <$>
                     [ "a-project/file_a_1.cpp"
                     , "a-project/file_a_2.hpp"
@@ -284,7 +297,7 @@ main = hspec $ do
             let compFunc = \o f -> (sort $ getExcluded True o f) `shouldBe` (sort expected)
             applyFilterWithComparative testDataPath compFunc testStr
         it "Includes plus Excludeds equals total" $ do
-            let testStr = "nameIs [\"docs.md\", \"tree\"] | nameEndsWith \".hs\""
+            let testStr = "nameIs [\"docs.md\" \"tree\"] | nameEndsWith \".hs\""
             let compareF = \orig incl excl -> (sort $ incl ++ excl) `shouldBe` (sort orig)
             compareInclExcl testDataPath testStr compareF
 

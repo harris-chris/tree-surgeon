@@ -45,7 +45,7 @@ import AST
 -- List
   '['        			{ L.RangedToken L.LBrack _ }
   ']'        			{ L.RangedToken L.RBrack _ }
-  ','        			{ L.RangedToken L.Comma _ }
+  ';'        			{ L.RangedToken L.SemiColon _ }
 -- Values
   string     			{ L.RangedToken (L.String _) _ }
 
@@ -93,8 +93,8 @@ name :: { VarName L.Range }
   : identifier { unTok $1 (\range (L.Identifier nm) -> VarName range nm) }
 
 listParse(typ) :: { [Exp L.Range] }
-  : listParse(typ) ',' typ 	{ $3 : $1 }
-  | listParse(typ) ','		{ $1 }
+  : listParse(typ) typ 		{ $2 : $1 }
+  | listParse(typ)		{ $1 }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 
