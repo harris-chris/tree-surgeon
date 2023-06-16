@@ -271,6 +271,13 @@ main = hspec $ do
                           <> " in let isFileA = nameStartsWith \"file_a\";"
                           <> " in (isCpp & isFileA)"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "let x = {matcher1}; y = {matcher2}; in (x & y)" $ do
+            let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "let isCpp = nameEndsWith \".cpp\";"
+                          <> " isFileA = nameStartsWith \"file_a\";"
+                          <> " in (isCpp & isFileA)"
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
     describe "Bash array functions" $ do
         it "Correctly includes" $ do

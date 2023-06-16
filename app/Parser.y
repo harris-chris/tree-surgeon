@@ -61,11 +61,12 @@ import AST
 %left nameStartsWith
 %left nameEndsWith
 %left nameContains
-%left let
-%left '='
-%right in
 %left all
 %left none
+%left let
+%right in
+%left '='
+%left ';'
 
 %%
 
@@ -98,12 +99,12 @@ listParse(typ) :: { [Exp L.Range] }
   | 		       		{ [] }
 
 namedExpr :: { NamedExpr L.Range }
-  : name '=' exp  	{ ($1, $3) }
+  : name '=' exp ';'  	{ ($1, $3) }
 
 decListParse(typ) :: { [NamedExpr L.Range] }
-  : decListParse(typ) ';' typ 				{ $3 : $1 }
-  | typ ';'		 	        		{ [ $1 ] }
-  | 		       					{ [] }
+  : decListParse(typ) typ 		{ $2 : $1 }
+  | typ		 	        	{ [ $1 ] }
+  | 		       				{ [] }
 
 {
 
