@@ -1,3 +1,26 @@
+We could have:
+- a single function which has both a file and a directory parameter. The advantage of this is that we can have a single set of functions, eg `nameIs`, not `ancestorNameIs`. Probably we'd actually have a list of directories. so `f` for file and `ds` for directories.
+- Then if we also had partial application
+  - `nameIs "file_a.cpp" f & any (nameIs "a-project") ds` to capture `file_a.cpp` in any folder which is, or has ancestor, `a-project`.
+  - `nameIs "file_a.cpp" f & ds == [ "a-project" ]` to capture `a-project/file_a.cpp`.
+  - `nameIs "file_a.cpp" f & endsWith [ "a-project" "docs" ] ds` to capture `**/a-project/docs/file_a.cpp`.
+  - `nameIs "file_a.cpp" f & startsWith [ "a-project" ] ds` to capture `a-project/**/file_a.cpp`.
+
+Have `is`, `contains`, `endsWith`, `startsWith`
+We have two options:
+  - `name` to get the name of `f` and `ds`, or
+  - we could have additional parameters, eg `fileName`, `dirName`, `fileData` and `dirsData`
+Realistically we might never get beyond `name`, so maybe best to use the second
+The syntax for the first would be something like:
+  - `is "file_a.cpp" (name f) & any (\d -> is "a-project" (name d)) ds`
+
+in Haskell:
+`any (\d -> isPrefixOf "ab" (stringVar d)) lstA` works fine, but not
+`any (isPrefixOf "ab" $ stringVar) lstA`, which doesn't work
+
+so we would need lambda functions and (ideally) lambda functions for this to work.
+
+
 The current error message is correct. Using `traverse`, we can change the type parameter but not the hshape or overall parameter. So we can't go from `Exp a` -> `Either TreeSurgeonException (Exp a)`.
 We could go from `Exp a -> Exp (a, Maybe TreeSurgeonException)`.
 
