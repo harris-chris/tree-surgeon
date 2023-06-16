@@ -104,55 +104,55 @@ compareInclExcl dirname filtStr compareF =
 main :: IO ()
 main = hspec $ do
     describe "Atomic expressions" $ do
-        it "Correctly executes ancestorNameIs string" $ do
+        it "ancestorNameIs string" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "ancestorNameIs \"a-project\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameIs [string]" $ do
+        it "ancestorNameIs [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
             let testStr = "ancestorNameIs [\"a-project\" \"b-library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameStartsWith string" $ do
+        it "ancestorNameStartsWith string" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "ancestorNameStartsWith \"a-proj\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameStartsWith [string]" $ do
+        it "ancestorNameStartsWith [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
             let testStr = "ancestorNameStartsWith [\"a-proj\" \"b-library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameEndsWith string" $ do
+        it "ancestorNameEndsWith string" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "ancestorNameEndsWith \"project\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameEndsWith [string]" $ do
+        it "ancestorNameEndsWith [string]" $ do
             let expected = Dir "test-data" [ treeA, treeB ]
             let testStr = "ancestorNameEndsWith [\"project\" \"library\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameContains string" $ do
+        it "ancestorNameContains string" $ do
             let expected = Dir "test-data" [ treeB ]
             let testStr = "ancestorNameContains \"lib\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ancestorNameContains [string]" $ do
+        it "ancestorNameContains [string]" $ do
             let expected = Dir "test-data" [ treeA , treeB ]
             let testStr = "ancestorNameContains [\"lib\" \"proj\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameIs string" $ do
+        it "nameIs string" $ do
             let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "nameIs \"file_a_2.hpp\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameIs [string]" $ do
+        it "nameIs [string]" $ do
             let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
             let treeB' = filterDir (\dt -> (name dt) == "file_b_1.cpp" ) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "nameIs [\"file_a_2.hpp\" \"file_b_1.cpp\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameStartsWith [string]" $ do
+        it "nameStartsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "nameStartsWith \"docs\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameStartsWith [string]" $ do
+        it "nameStartsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
             let treeC' = filterDir
                           (\dt -> LBS.isPrefixOf "ext" (LBS.pack $ name dt)
@@ -161,39 +161,39 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA' , treeC' ]
             let testStr = "nameStartsWith [\"docs\" \"tr\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameEndsWith string" $ do
+        it "nameEndsWith string" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "nameEndsWith \".cpp\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameEndsWith [string]" $ do
+        it "nameEndsWith [string]" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let treeC' = filterDir (\dt -> LBS.isSuffixOf ".hs" $ LBS.pack $ name dt) treeC
             let expected = Dir "test-data" [ treeA' , treeB' , treeC' ]
             let testStr = "nameEndsWith [\".cpp\" \".hs\"]"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes nameContains string" $ do
+        it "nameContains string" $ do
             let treeB' = filterDir (\dt -> BS.isInfixOf "file_b" (BS.pack $ name dt)) treeB
             let expected = Dir "test-data" [ treeB' ]
             let testStr = "nameContains \"file_b\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes all" $ do
+        it "all" $ do
             let expected = Dir "test-data" [ treeA , treeB , treeC ]
             let testStr = "all"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes none" $ do
+        it "none" $ do
             let expected = Dir "test-data" [ ]
             let testStr = "none"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
     describe "Inverting expressions" $ do
-        it "Correctly executes !exp" $ do
+        it "!exp" $ do
             let expected = Dir "test-data" [ treeB , treeC ]
             let testStr = "!ancestorNameIs \"a-project\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes !(exp | exp | exp)" $ do
+        it "!(exp | exp | exp)" $ do
             let treeA' = filterDir
                           (\dt -> (not $ LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt)
                           && (not $ LBS.isSuffixOf ".hpp" $ LBS.pack $ name dt)) treeA
@@ -209,38 +209,38 @@ main = hspec $ do
             applyTwoFiltersAndCompare testDataPath str notStr compareF
 
     describe "Combinations of expressions" $ do
-        it "Correctly executes exp | exp" $ do
+        it "exp | exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
             let testStr = "nameEndsWith \".cpp\" | ancestorNameIs \"b-library\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ( exp )" $ do
+        it "( exp )" $ do
             let expected = Dir "test-data" [ treeA ]
             let testStr = "(ancestorNameIs \"a-project\")"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ( exp | exp )" $ do
+        it "( exp | exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' , treeB ]
             let testStr = "( nameEndsWith \".cpp\" | ancestorNameIs \"b-library\" )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ( exp | exp | exp )" $ do
+        it "( exp | exp | exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeC' = filterOutDirs treeC
             let expected = Dir "test-data" [ treeA' , treeB , treeC' ]
             let testStr = "( nameEndsWith \".cpp\" | ancestorNameIs \"b-library\" | nameEndsWith \".hs\" )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes exp & exp" $ do
+        it "exp & exp" $ do
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeB' ]
             let testStr = "nameEndsWith \".cpp\" & ancestorNameIs \"b-library\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ( exp | exp ) &  exp" $ do
+        it "( exp | exp ) &  exp" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "( nameEndsWith \".cpp\" & ( ancestorNameIs \"a-project\" | ancestorNameIs \"b-library\" ) )"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes ( exp & exp ) | ( exp & exp )" $ do
+        it "( exp & exp ) | ( exp & exp )" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".hpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
@@ -252,23 +252,23 @@ main = hspec $ do
         --         (== Couldn'tLex (show testStr))
 
     describe "Let expressions" $ do
-        it "Correctly executes let {matcher} in {matcher}" $ do
+        it "let x = {matcher}; in x" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
             let testStr = "let isCpp = (nameEndsWith \".cpp\"); in isCpp"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes let {matcher} in ({matcher} & exp)" $ do
+        it "let x = {matcher}; in (x & exp)" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "let isCpp = nameEndsWith \".cpp\";"
                           <> " in ( isCpp & nameStartsWith \"file_a\")"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "Correctly executes let {matcher1} in let {matcher2} in ({matcher1} & {matcher2})" $ do
+        it "let x = {matcher1} in let y = {matcher2} in (x & y)" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "let isCpp = nameEndsWith \".cpp\";"
-                          <> " in let isFileA = nameStartsWith \"file_a\""
+                          <> " in let isFileA = nameStartsWith \"file_a\";"
                           <> " in (isCpp & isFileA)"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
