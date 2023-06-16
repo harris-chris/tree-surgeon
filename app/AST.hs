@@ -3,7 +3,7 @@
 module AST
   (
     Exp(..)
-    -- , Dec(..)
+    , NamedExpr(..)
     , VarName(..)
     , FsObjData(..)
     , IsExp(..)
@@ -81,10 +81,10 @@ data VarName a
     = VarName a ByteString
     deriving (Eq, Foldable, Functor, Show, Traversable)
 
-data NamedExpr a
-    = NamedExpr
-        { varName :: ByteString
-        , namedExp :: Exp a }
+getNameOnly :: VarName a -> ByteString
+getNameOnly (VarName a bs) = bs
+
+type NamedExpr a = (VarName a, Exp a)
 
 -- data Dec a
 --   = Let (VarName a) (Exp a) (Exp a)
@@ -108,32 +108,40 @@ data Exp a =
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
-    | Let a (VarName a) (Exp a) (Exp a)
+    | Let a [NamedExpr a] (Exp a)
     deriving (Foldable, Functor, Show, Traversable)
 
 deNameExp :: (Show a, Eq a) => Exp a -> Either TreeSurgeonException (Exp a)
 deNameExp exp = deName' [] exp
 
 deName' :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TreeSurgeonException (Exp a)
-deName' nameDefs dec@(Let _ name@(VarName _ nmStr) innerExp exp) =
-    let matches = filter (\n -> varName n == nmStr) nameDefs
-    in case matches of
-        [] -> let nameDefs' = (NamedExpr nmStr innerExp):nameDefs
+deName' nameDefs dec@(Let _ namedExprs exp) =
+    case namesMatch nameDefs namedExprs of
+        [] -> let nameDefs' = namedExprs ++ nameDefs
               in deName' nameDefs' exp
-        _:_ -> Left $ DuplicateName (show dec) (show name)
+        d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
 deName' nameDefs (EVar _ name@(VarName _ nmStr)) =
-    let matches = filter (\n -> varName n == nmStr) nameDefs
+    let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nameDefs
     in case matches of
-        [] -> let varsInScope = varName <$> nameDefs
+        [] -> let varsInScope = (getNameOnly . fst) <$> nameDefs
               in Left $ UnrecognizedName varsInScope (show nmStr)
-        [x] -> let expr = namedExp x
-                       in deName' nameDefs expr
+        [x] -> let expr = snd x
+               in deName' nameDefs expr
 deName' nameDefs (Or a x y) = Or a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
 deName' nameDefs (And a x y) = And a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
 deName' nameDefs (Not a x) = Not a <$> (deName' nameDefs x)
 deName' nameDefs (EPar a x) = EPar a <$> (deName' nameDefs x)
 deName' nameDefs (EList a xs) = EList a <$> mapM (deName' nameDefs) xs
 deName' nameDefs exp = Right $ exp
+
+namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
+namesMatch xs ys = namesMatch' xs ys []
+
+namesMatch' :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
+namesMatch' (x:xs) ys acc =
+    namesMatch' xs ys $ acc
+    ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
+namesMatch' [] ys acc = acc
 
 instance (Eq a, Show a) => IsExp (Exp a) where
     deName = deNameExp
@@ -173,7 +181,7 @@ instance (Eq a, Show a) => IsExp (Exp a) where
     getMatcher (EVar _ _) =
         error "EVar encountered in getMatcher processing; please run deName first"
     getMatcher (EPar _ x) = getMatcher x
-    getMatcher (Let _ _ _ _) =
+    getMatcher (Let _ _ _) =
         error "Let encountered in getMatcher processing; please run deName first"
     getMatcher exp = Left $ Couldn'tParse $ show exp
 

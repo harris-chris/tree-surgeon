@@ -256,18 +256,18 @@ main = hspec $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let treeB' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeB
             let expected = Dir "test-data" [ treeA' , treeB' ]
-            let testStr = "let isCpp = (nameEndsWith \".cpp\") in isCpp"
+            let testStr = "let isCpp = (nameEndsWith \".cpp\"); in isCpp"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes let {matcher} in ({matcher} & exp)" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' ]
-            let testStr = "let isCpp = nameEndsWith \".cpp\""
+            let testStr = "let isCpp = nameEndsWith \".cpp\";"
                           <> " in ( isCpp & nameStartsWith \"file_a\")"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
         it "Correctly executes let {matcher1} in let {matcher2} in ({matcher1} & {matcher2})" $ do
             let treeA' = filterDir (\dt -> LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt) treeA
             let expected = Dir "test-data" [ treeA' ]
-            let testStr = "let isCpp = nameEndsWith \".cpp\""
+            let testStr = "let isCpp = nameEndsWith \".cpp\";"
                           <> " in let isFileA = nameStartsWith \"file_a\""
                           <> " in (isCpp & isFileA)"
             applyFilterWith testDataPath ( compareToExpected expected ) testStr

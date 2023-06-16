@@ -70,42 +70,40 @@ import AST
 %%
 
 exp :: { Exp L.Range }
-  : exp '|' exp 		{ Or (info $1 <-> info $3) $1 $3 }
-  | exp '&' exp 		{ And (info $1 <-> info $3) $1 $3 }
-  | '!' exp 			{ Not (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameIs exp 		{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameStartsWith exp  { AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameEndsWith exp  	{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameContains exp  	{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
-  | name 	       		{ EVar (info $1) $1 }
-  | nameIs exp 			{ NameIs (L.rtRange $1 <-> info $2) $2 }
-  | nameStartsWith exp    	{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
-  | nameEndsWith exp    	{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | nameContains exp 		{ NameContains (L.rtRange $1 <-> info $2) $2 }
-  | all 			{ All (L.rtRange $1 <-> L.rtRange $1) }
-  | none 			{ None (L.rtRange $1 <-> L.rtRange $1) }
-  | '(' exp ')'			{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | string        		{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
-  | '[' listParse(exp) ']'  	{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | dec 			{ $1 }
+  : exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
+  | exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
+  | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameIs exp 			{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameStartsWith exp  	{ AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameEndsWith exp  		{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | ancestorNameContains exp  		{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
+  | name 	       			{ EVar (info $1) $1 }
+  | nameIs exp 				{ NameIs (L.rtRange $1 <-> info $2) $2 }
+  | nameStartsWith exp    		{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
+  | nameEndsWith exp    		{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
+  | nameContains exp 			{ NameContains (L.rtRange $1 <-> info $2) $2 }
+  | all 				{ All (L.rtRange $1 <-> L.rtRange $1) }
+  | none 				{ None (L.rtRange $1 <-> L.rtRange $1) }
+  | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | string        			{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+  | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | let decListParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
 
 name :: { VarName L.Range }
   : identifier { unTok $1 (\range (L.Identifier nm) -> VarName range nm) }
 
 listParse(typ) :: { [Exp L.Range] }
   : listParse(typ) typ 		{ $2 : $1 }
-  | listParse(typ)		{ $1 }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 
-# decListParse(typ) :: { [Exp L.Range] }
-#   : listParse(typ) typ 		{ $2 : $1 }
-#   | listParse(typ)		{ $1 }
-#   | typ 			{ [ $1 ] }
-#   | 		       		{ [] }
+namedExpr :: { NamedExpr L.Range }
+  : name '=' exp  	{ ($1, $3) }
 
-dec :: { Exp L.Range }
-  : let name '=' exp in exp { Let (L.rtRange $1 <-> info $6) $2 $4 $6 }
+decListParse(typ) :: { [NamedExpr L.Range] }
+  : decListParse(typ) ';' typ 				{ $3 : $1 }
+  | typ ';'		 	        		{ [ $1 ] }
+  | 		       					{ [] }
 
 {
 
