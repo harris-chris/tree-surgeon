@@ -55,9 +55,9 @@ instance Show TreeSurgeonException where
         "; it is a file, not a directory"
     show (UnrecognizedName varsInScope name) =
         "Error: Unrecognized name " <> name
-        <> "; have names "
-        <> (intercalate " " $ BS.unpack <$> varsInScope)
-        <> " in scope"
+        <> "; have names ["
+        <> (intercalate ", " $ BS.unpack <$> varsInScope)
+        <> "] in scope"
     show (DuplicateName dec name) =
         "Error: name " <> name
         <> " in declaration " <> dec
