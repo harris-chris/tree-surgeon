@@ -78,7 +78,7 @@ exp :: { Exp L.Range }
   | ancestorNameStartsWith exp  	{ AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameEndsWith exp  		{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
   | ancestorNameContains exp  		{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
-  | name 	       			{ EVar (info $1) $1 }
+  | identifier { unTok $1 (\range (L.Identifier nm) -> EVar range $ VarName nm) }
   | nameIs exp 				{ NameIs (L.rtRange $1 <-> info $2) $2 }
   | nameStartsWith exp    		{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
   | nameEndsWith exp    		{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
@@ -88,10 +88,10 @@ exp :: { Exp L.Range }
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        			{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
   | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | let decListParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
+  | let decParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
 
-name :: { VarName L.Range }
-  : identifier { unTok $1 (\range (L.Identifier nm) -> VarName range nm) }
+  name :: { VarName }
+  : identifier { unTok $1 (\range (L.Identifier nm) -> VarName nm) }
 
 listParse(typ) :: { [Exp L.Range] }
   : listParse(typ) typ 		{ $2 : $1 }
@@ -101,8 +101,8 @@ listParse(typ) :: { [Exp L.Range] }
 namedExpr :: { NamedExpr L.Range }
   : name '=' exp ';'  	{ ($1, $3) }
 
-decListParse(typ) :: { [NamedExpr L.Range] }
-  : decListParse(typ) typ 		{ $2 : $1 }
+decParse(typ) :: { [NamedExpr L.Range] }
+  : decParse(typ) typ 		{ $2 : $1 }
   | typ		 	        	{ [ $1 ] }
   | 		       				{ [] }
 
@@ -119,6 +119,10 @@ unQuote' ss = ss
 -- | Build a simple node by extracting its token type and range.
 unTok :: L.RangedToken -> (L.Range -> L.Token -> a) -> a
 unTok (L.RangedToken tok range) ctor = ctor range tok
+
+-- | Build a simple node by extracting its token type and range.
+valOnly :: L.RangedToken -> (L.Token -> a) -> a
+valOnly (L.RangedToken tok range) ctor = ctor tok
 
 -- | Unsafely extracts the the metainformation field of a node.
 info :: Foldable f => f a -> a

@@ -1,8 +1,9 @@
 We could have:
-- a single function which has both a file and a directory parameter. The advantage of this is that we can have a single set of functions, eg `nameIs`, not `ancestorNameIs`. Probably we'd actually have a list of directories. so `f` for file and `ds` for directories.
+- a function which has a single parameter, a list of directories, with the file (note that this may be a directory) as its final object. Have `basename` and `dirnames` functions which effectively are just `last` and `init`. The advantage of this is that we can have a single set of functions, eg `nameIs`, not `ancestorNameIs`. What would we call this object? `row`? Have a `type` function to tell if it's a file or a directory. Make sure these names are consistent with unix convention.
+- or, the argument could be the actual full string, eg `this/that/my_file.cpp`. Then `basename` gives you `my_file.cpp`.
 - Then if we also had partial application
-  - `nameIs "file_a.cpp" f & any (nameIs "a-project") ds` to capture `file_a.cpp` in any folder which is, or has ancestor, `a-project`.
-  - `nameIs "file_a.cpp" f & ds == [ "a-project" ]` to capture `a-project/file_a.cpp`.
+  - `nameIs "file_a.cpp" (basename row) & any (nameIs "a-project") (dirnames row)` to capture `file_a.cpp` in any folder which is, or has ancestor, `a-project`.
+  - `nameIs "file_a.cpp" (basename row) & ds == [ "a-project" ]` to capture `a-project/file_a.cpp`.
   - `nameIs "file_a.cpp" f & endsWith [ "a-project" "docs" ] ds` to capture `**/a-project/docs/file_a.cpp`.
   - `nameIs "file_a.cpp" f & startsWith [ "a-project" ] ds` to capture `a-project/**/file_a.cpp`.
 

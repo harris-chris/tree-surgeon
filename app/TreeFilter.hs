@@ -24,7 +24,7 @@ toElements :: DirTree a -> DirTree FsObjData
 toElements t = toElements' [] t
 
 toElements' :: [ByteString] -> DirTree a -> DirTree FsObjData
-toElements' parents (File name _) = File name (FileData parents)
+toElements' parents (File name _) = File name (FileData name parents)
 toElements' parents (Dir name contents) =
     let contents' = map (toElements' ((pack name):parents)) contents
     in Dir name contents'
@@ -55,7 +55,7 @@ getExcluded ancestors origTree filteredTree =
     in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
 filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
-filterTreeFilesWith f (File name objData) = f name objData
+filterTreeFilesWith f (File name objData) = f objData
 filterTreeFilesWith _ _ = True
 
 filterTreeDirs' :: DirTree FsObjData -> Maybe (DirTree FsObjData)

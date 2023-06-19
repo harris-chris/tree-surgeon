@@ -23,7 +23,7 @@ import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
 
-type Matcher = (FileName -> FsObjData -> Bool)
+type Matcher = (FsObjData -> Bool)
 type MatcherE a = Either TreeSurgeonException Matcher
 type NameMatcherFunc = (ByteString -> ByteString -> Bool)
 
@@ -64,27 +64,30 @@ instance Show TreeSurgeonException where
         <> " already exists"
 
 data FsObjData =
-    FileData { parents :: [ByteString] }
+    FileData {
+        basename :: String
+        , parents :: [ByteString]
+        }
     deriving (Eq, Show, Ord)
 
 class IsFilePath a where
     toFilePath :: a -> FilePath
 
 instance IsFilePath FsObjData where
-    toFilePath (FileData pts) = joinPath $ BS.unpack <$> pts
+    toFilePath (FileData basename pts) = joinPath $ basename:(BS.unpack <$> pts)
 
 class Show exp => IsExp exp where
     getMatcher :: exp -> MatcherE exp
     deName :: exp -> Either TreeSurgeonException exp
 
-data VarName a
-    = VarName a ByteString
-    deriving (Eq, Foldable, Functor, Show, Traversable)
+data VarName
+    = VarName ByteString
+    deriving (Eq, Show)
 
-getNameOnly :: VarName a -> ByteString
-getNameOnly (VarName a bs) = bs
+getNameOnly :: VarName -> ByteString
+getNameOnly (VarName bs) = bs
 
-type NamedExpr a = (VarName a, Exp a)
+type NamedExpr a = (VarName, Exp a)
 
 -- data Dec a
 --   = Let (VarName a) (Exp a) (Exp a)
@@ -104,12 +107,16 @@ data Exp a =
     | NameContains a (Exp a)
     | All a
     | None a
-    | EVar a (VarName a)
+    | EVar a VarName
     | EPar a (Exp a)
     | EString a ByteString
     | EList a [Exp a]
     | Let a [NamedExpr a] (Exp a)
+    | ObjData FsObjData -- we replace the `file` var with this
     deriving (Foldable, Functor, Show, Traversable)
+
+resolveFileVar :: (Show a, Eq a) => Exp a -> FsObjData -> Either TreeSurgeonException (Exp a)
+resolveFileVar exp fsObjData = deName' [(VarName $ BS.pack "file", ObjData fsObjData)] exp
 
 deNameExp :: (Show a, Eq a) => Exp a -> Either TreeSurgeonException (Exp a)
 deNameExp exp = deName' [] exp
@@ -120,7 +127,7 @@ deName' nameDefs dec@(Let _ namedExprs exp) =
         [] -> let nameDefs' = namedExprs ++ nameDefs
               in deName' nameDefs' exp
         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
-deName' nameDefs (EVar _ name@(VarName _ nmStr)) =
+deName' nameDefs (EVar _ name@(VarName nmStr)) =
     let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nameDefs
     in case matches of
         [] -> let varsInScope = (getNameOnly . fst) <$> nameDefs
@@ -147,17 +154,16 @@ instance (Eq a, Show a) => IsExp (Exp a) where
     deName = deNameExp
     getMatcher (Or _ x y) =
         case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \n d -> fx n d || fy n d
+            (Right fx, Right fy) -> Right $ \objD -> fx objD || fy objD
             (Left err, _) -> Left err
             (_, Right err) -> Right err
     getMatcher (And _ x y) =
         case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \n d -> fx n d && fy n d
+            (Right fx, Right fy) -> Right $ \objD -> fx objD && fy objD
             (Left err, _) -> Left err
             (_, Right err) -> Right err
     getMatcher (Not _ exp) =
-        let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
-        in invertMatcher <$> getMatcher exp
+        (\matcher -> not . matcher) <$> getMatcher exp
     getMatcher (AncestorNameIs _ exp) =
         ancestorNameMatchesWith (==) exp
     getMatcher (AncestorNameStartsWith _ exp) =
@@ -176,8 +182,8 @@ instance (Eq a, Show a) => IsExp (Exp a) where
     getMatcher (NameContains _ exp) =
         nameMatchesWith isInfixOf' exp
         where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
-    getMatcher (All _) = Right (\_ _ -> True)
-    getMatcher (None _) = Right (\_ _ -> False)
+    getMatcher (All _) = Right (\_ -> True)
+    getMatcher (None _) = Right (\_ -> False)
     getMatcher (EVar _ _) =
         error "EVar encountered in getMatcher processing; please run deName first"
     getMatcher (EPar _ x) = getMatcher x
@@ -193,18 +199,18 @@ matchersToMatcherWithAny :: (Exp a -> MatcherE a) -> [Exp a] -> MatcherE a
 matchersToMatcherWithAny f exps =
     let matcherEList = f <$> exps
         eitherListMatcher = sequenceA matcherEList
-        matchersToMatcherF = \matchers -> (\n d -> any (\f -> f n d) matchers)
+        matchersToMatcherF = \matchers -> (\objD -> any (\f -> f objD) matchers)
     in matchersToMatcherF <$> eitherListMatcher
 
 ancestorNameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
 ancestorNameMatchesWith f (EString _ x) =
-    Right $ \name fsObj -> any (f x) (parents fsObj)
+    Right $ \objD -> any (f x) (parents objD)
 ancestorNameMatchesWith f (EList _ exps) =
     matchersToMatcherWithAny (ancestorNameMatchesWith f) exps
 ancestorNameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
 
 nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
-nameMatchesWith f (EString _ x) = Right $ \name _ -> f x $ BS.pack name
+nameMatchesWith f (EString _ x) = Right $ \objD -> f x $ (BS.pack $ basename objD)
 nameMatchesWith f (EList _ exps) = matchersToMatcherWithAny (nameMatchesWith f) exps
 nameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
 
