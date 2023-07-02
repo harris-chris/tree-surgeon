@@ -1,3 +1,9 @@
+Notes on where we currently are:
+- Read the stuff directly below, it's useful
+- We need to move the AST to its own file, because both Functions.hs and deFunc need it, and deFunc depends upon Functions.hs.
+- All going well
+
+
 Either we:
 - Have special syntax for the variable name, `file` or `row` or whatever we're calling it, and replace that special syntax with the real variable at some point. This variable has a special type (it is not a string). This would not get replaced during the `deName` stage, but would survive until the `deFunc` stage and get replaced with strings or whatever else then.
 - in deFuncs, we have some built-in functions, like `basename`. Right now we have no syntax to create functions, but this is something we want to add. So if the user has done:

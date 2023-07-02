@@ -40,7 +40,7 @@ instance Show TSException where
         "Error in expression:\n" <> expStr
     show (Couldn'tParse expStr) =
         "Error in expression:\n" <> expStr
-    show (FuncCalledWithWrongNumArgs funcName actualNum expectedNum) =
+    show (FuncWrongNumArgs funcName actualNum expectedNum) =
         "Error:\n" <>
         "Function " <> funcName <>
         " expects " <> show expectedNum <>
@@ -93,25 +93,9 @@ data Exp a =
     | Let a [NamedExpr a] (Exp a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
--- deName then deFunc gets us here
-data ResolvedExp a =
-    And a (ResolvedExp a) (ResolvedExp a)
-    | Not a (ResolvedExp a)
-    | Or a (ResolvedExp a) (ResolvedExp a)
-    -- Literals
-    | EList a [ResolvedExp a]
-    | EString a ByteString
-    | EFile a FsObjData
-    -- Syntax
-    | EPar a (ResolvedExp a)
-    deriving (Foldable, Functor, Eq, Show, Traversable)
-
 data VarName a
     = VarName a ByteString
     deriving (Foldable, Functor, Eq, Show, Traversable)
-
--- resolveFileVar :: (Show a, Eq a) => Exp a -> FsObjData -> Either TSException (Exp a)
--- resolveFileVar exp fsObjData = deName' [(VarName $ BS.pack "file", ObjData fsObjData)] exp
 
 deName :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TSException (Exp a)
 deName nDefs (And a x y) = And a <$> (deName nDefs x) <*> (deName nDefs y)
@@ -147,13 +131,12 @@ deFunc fsObjData (EFunc a (VarName _ fName) args)
     let args' = mapM (deFunc fsObjData) args
     in parseFunc name <$> args'
         where parseFunc name args'
-            | name == "==" = funcEqs args'
-            | name == "basename" = funcName args'
+            | name == "==" = eqsFunc args'
+            | name == "basename" = basenameFunc args'
 deFunc fsObjData (EList a xs) = EList a <$> mapM (deFunc fsObjData) xs
 deFunc fsObjData exp@(EString _ _) = error "Literal is found outside a function"
 deFunc fsObjData (EPar a x) = EPar a <$> (deFunc fsObjData x)
 deFunc fsObjData dec@(Let _ namedExprs exp) = error "Let found in deFunc"
-
 
 namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
 namesMatch xs ys = namesMatch' xs ys []
