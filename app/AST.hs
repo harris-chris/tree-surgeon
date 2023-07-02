@@ -28,6 +28,7 @@ data TSException =
     | Couldn'tParse String
     | DuplicateName String String
     | FuncArgs String [String]
+    | FuncWrongNumArgs String Integer Integer
     | NotAFunction String [String]
     | UnrecognizedName [String] String
     deriving (Eq)
@@ -39,6 +40,11 @@ instance Show TSException where
         "Error in expression:\n" <> expStr
     show (Couldn'tParse expStr) =
         "Error in expression:\n" <> expStr
+    show (FuncCalledWithWrongNumArgs funcName actualNum expectedNum) =
+        "Error:\n" <>
+        "Function " <> funcName <>
+        " expects " <> show expectedNum <>
+        " arguments, but has been called with " <> show actualNum
     show (UnrecognizedName varsInScope name) =
         "Error: Unrecognized name " <> name
         <> "; have names ["
@@ -80,12 +86,24 @@ data Exp a =
     -- Function
     | EFunc a (VarName a) [Exp a]
     -- Literals
-    | EFile a
     | EList a [Exp a]
     | EString a ByteString
     -- Syntax
     | EPar a (Exp a)
     | Let a [NamedExpr a] (Exp a)
+    deriving (Foldable, Functor, Eq, Show, Traversable)
+
+-- deName then deFunc gets us here
+data ResolvedExp a =
+    And a (ResolvedExp a) (ResolvedExp a)
+    | Not a (ResolvedExp a)
+    | Or a (ResolvedExp a) (ResolvedExp a)
+    -- Literals
+    | EList a [ResolvedExp a]
+    | EString a ByteString
+    | EFile a FsObjData
+    -- Syntax
+    | EPar a (ResolvedExp a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
 data VarName a
@@ -119,47 +137,23 @@ deName nDefs dec@(Let _ namedExprs exp) =
         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
 deName nDefs exp = Right $ exp
 
--- resolveFuncs :: (Show a, Eq a) => FsObjData -> Exp a -> Either TSException (Exp a)
--- resolveFuncs fsObjData (And a x y) =
---     And a <$> (resolveFuncs fsObjData x) <*> (resolveFuncs fsObjData y)
--- resolveFuncs fsObjData (Not a x) =
---     Not a <$> (resolveFuncs fsObjData x)
--- resolveFuncs fsObjData (Or a x y) =
---     Or a <$> (resolveFuncs fsObjData x) <*> (resolveFuncs fsObjData y)
--- resolveFuncs fsObjData (EList a xs) =
---     EList a <$> mapM (resolveFuncs fsObjData) xs
+-- Resolve all the remaining functions; since we have run deName prior to this point,
+-- these functions should only be the built-in functions
+deFunc :: (Show a, Eq a) => FsObjData -> Exp a -> Either TSException (Exp a)
+deFunc fsObjData (And a x y) = And a <$> (deFunc fsObjData x) <*> (deFunc fsObjData y)
+deFunc fsObjData (Not a x) = Not a <$> (deFunc fsObjData x)
+deFunc fsObjData (Or a x y) = Or a <$> (deFunc fsObjData x) <*> (deFunc fsObjData y)
+deFunc fsObjData (EFunc a (VarName _ fName) args)
+    let args' = mapM (deFunc fsObjData) args
+    in parseFunc name <$> args'
+        where parseFunc name args'
+            | name == "==" = funcEqs args'
+            | name == "basename" = funcName args'
+deFunc fsObjData (EList a xs) = EList a <$> mapM (deFunc fsObjData) xs
+deFunc fsObjData exp@(EString _ _) = error "Literal is found outside a function"
+deFunc fsObjData (EPar a x) = EPar a <$> (deFunc fsObjData x)
+deFunc fsObjData dec@(Let _ namedExprs exp) = error "Let found in deFunc"
 
---     let args' = mapM (evaluate . (deName' nDefs)) args
---     in parseFunc name <$> args'
---         where parseFunc name args'
---             | name == "name" && null args = Right $ EString rng $ nameF name
---             | name == "name" = Left $ FuncArgs (BS.unpack name) (show <$> args)
-
--- resolveFuncs fsObjData exp@(EString _ _) = Right $ exp
--- resolveFuncs fsObjData (EPar a x) = EPar a <$> (resolveFuncs fsObjData x)
--- resolveFuncs fsObjData dec@(Let _ namedExprs exp) =
---     case namesMatch fsObjData namedExprs of
---         [] -> let fsObjData' = namedExprs ++ fsObjData
---               in resolveFuncs fsObjData' exp
---         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
--- resolveFuncs fsObjData exp = Right $ exp
-
--- simplifyLit' :: (Show a, Eq a) => [NamedExpr a] -> Lit a -> Either TSException (Lit a)
--- simplifyLit' nameDefs (Func rng (VarName name) args) =
---     let args' = mapM (evaluate . (simplifyExp' namedDefs)) args
---     in parseFunc name <$> args'
---         where parseFunc name args'
---             | name == "name" && null args = Right $ EString rng $ nameF name
---             | name == "name" = Left $ FuncArgs (BS.unpack name) (show <$> args)
--- simplifyLit' nameDefs (EList a xs) = EList a <$> mapM (simplifyExp' nameDefs) xs
-
--- parseFunc :: ByteString -> [
-
--- simplifyExp :: (Show a, Eq a) => Exp a -> Either TSException (Exp a)
--- simplifyExp exp = do
---     exp' <- deName exp
---     exp'' <- resolveFuncs exp
---     return exp''
 
 namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
 namesMatch xs ys = namesMatch' xs ys []
@@ -170,22 +164,22 @@ namesMatch' (x:xs) ys acc =
     ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
 namesMatch' [] ys acc = acc
 
-resolveBuiltins :: (Eq a, Show a) => Exp a -> Either TSException Bool
-resolveBuiltins (And _ x y) =
-    case ((resolveBuiltins x), (resolveBuiltins y)) of
-        (Right bx, Right by) -> Right $ bx && by
-        (Left err, _) -> Left err
-        (_, Left err) -> Left err
-resolveBuiltins (Not _ exp) =
-    not <$> resolveBuiltins exp
-resolveBuiltins (Or _ x y) =
-    case ((resolveBuiltins x), (resolveBuiltins y)) of
-        (Right bx, Right by) -> Right $ bx || by
-        (Left err, _) -> Left err
-        (_, Left err) -> Left err
-resolveBuiltins (EList _ xs) = error "Encountered EList"
-resolveBuiltins (EString _ x) = error "Encountered EString"
-resolveBuiltins (EPar _ x) = resolveBuiltins x
-resolveBuiltins (Let _ namedExprs exp) = error "Encountered Let"
-resolveBuiltins exp = Left $ Couldn'tParse $ show exp
+-- resolveBuiltins :: (Eq a, Show a) => Exp a -> Either TSException Bool
+-- resolveBuiltins (And _ x y) =
+--     case ((resolveBuiltins x), (resolveBuiltins y)) of
+--         (Right bx, Right by) -> Right $ bx && by
+--         (Left err, _) -> Left err
+--         (_, Left err) -> Left err
+-- resolveBuiltins (Not _ exp) =
+--     not <$> resolveBuiltins exp
+-- resolveBuiltins (Or _ x y) =
+--     case ((resolveBuiltins x), (resolveBuiltins y)) of
+--         (Right bx, Right by) -> Right $ bx || by
+--         (Left err, _) -> Left err
+--         (_, Left err) -> Left err
+-- resolveBuiltins (EList _ xs) = error "Encountered EList"
+-- resolveBuiltins (EString _ x) = error "Encountered EString"
+-- resolveBuiltins (EPar _ x) = resolveBuiltins x
+-- resolveBuiltins (Let _ namedExprs exp) = error "Encountered Let"
+-- resolveBuiltins exp = Left $ Couldn'tParse $ show exp
 

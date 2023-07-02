@@ -14,10 +14,11 @@ Either we:
   So the conclusion of all this is that:
     - A variable name is just a special case of a function that has no arguments
     - we need Bools in the AST.
-    - we need a special case of `deName` to deal with this, and
+    - we need a special case of `deName` to deal with this (we now have this)
     - `==` needs to be a function, not a piece of AST syntax.
     - Within the parser, we can make a function infix if we want to
     - We need to supply the built-in functions (eg `==` to `deName`)
+    - We need to inject the `file` variable at the deFunc stage.
 -
 -
 

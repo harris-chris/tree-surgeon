@@ -32,7 +32,6 @@ tokens :-
 <0> "["     			{ tok LBrack }
 <0> "]"     			{ tok RBrack }
 -- Literals
-<0> "file" 			{ tok File }
 <0> \"[^\"]*\" 			{ tokString }
 -- Syntax
 <0> "let"			{ tok Let }
@@ -98,7 +97,6 @@ data Token
   | Or
   -- Literals
   | String ByteString
-  | File
   -- Parentheses
   | LPar
   | RPar

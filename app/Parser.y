@@ -29,7 +29,6 @@ import AST
   '['        			{ L.RangedToken L.LBrack _ }
   ']'        			{ L.RangedToken L.RBrack _ }
 -- Literals
-  file     			{ L.RangedToken L.File _ }
   string     			{ L.RangedToken (L.String _) _ }
 -- Syntax
   let 				{ L.RangedToken L.Let _ }
@@ -66,7 +65,6 @@ exp :: { Exp L.Range }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
   | name listParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | file 				{ EFile (L.rtRange $1) }
   | string        			{ unTok $1 (\rng (L.String s) -> EString rng $ unQuote s) }
   | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
