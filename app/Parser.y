@@ -64,16 +64,15 @@ exp :: { Exp L.Range }
   : exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
   | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
-  | identifier listParse(exp)
-      { unTok (info $1 <-> info (last $2)) (\rng (L.Identifier n) -> EFunc rng (VarName n)) $2 }
+  | name listParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | file 				{ EFile (L.rtRange $1) }
   | string        			{ unTok $1 (\rng (L.String s) -> EString rng $ unQuote s) }
   | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
 
-name :: { VarName }
-  : identifier 				{ unTok $1 (\_ (L.Identifier n) -> VarName n) }
+name :: { VarName L.Range }
+  : identifier 				{ unTok $1 (\rng (L.Identifier n) -> VarName rng n) }
 
 listParse(typ) :: { [Exp L.Range] }
   : listParse(typ) typ 		{ $2 : $1 }

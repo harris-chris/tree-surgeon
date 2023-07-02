@@ -67,10 +67,10 @@ class IsFilePath a where
 instance IsFilePath FsObjData where
     toFilePath (FileData basename pts) = joinPath $ basename:(BS.unpack <$> pts)
 
-getNameOnly :: VarName -> ByteString
-getNameOnly (VarName bs) = bs
+getNameOnly :: VarName a -> ByteString
+getNameOnly (VarName _ bs) = bs
 
-type NamedExpr a = (VarName, Exp a)
+type NamedExpr a = (VarName a, Exp a)
 
 data Exp a =
     -- Logical operators
@@ -78,7 +78,7 @@ data Exp a =
     | Not a (Exp a)
     | Or a (Exp a) (Exp a)
     -- Function
-    | EFunc a VarName [Exp a]
+    | EFunc a (VarName a) [Exp a]
     -- Literals
     | EFile a
     | EList a [Exp a]
@@ -88,9 +88,9 @@ data Exp a =
     | Let a [NamedExpr a] (Exp a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
-data VarName
-    = VarName ByteString
-    deriving (Eq, Show)
+data VarName a
+    = VarName a ByteString
+    deriving (Foldable, Functor, Eq, Show, Traversable)
 
 -- resolveFileVar :: (Show a, Eq a) => Exp a -> FsObjData -> Either TSException (Exp a)
 -- resolveFileVar exp fsObjData = deName' [(VarName $ BS.pack "file", ObjData fsObjData)] exp
@@ -99,7 +99,7 @@ deName :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TSException (Exp a)
 deName nDefs (And a x y) = And a <$> (deName nDefs x) <*> (deName nDefs y)
 deName nDefs (Not a x) = Not a <$> (deName nDefs x)
 deName nDefs (Or a x y) = Or a <$> (deName nDefs x) <*> (deName nDefs y)
-deName nDefs (EFunc a v@(VarName nmStr) args) =
+deName nDefs (EFunc a v@(VarName _ nmStr) args) =
     let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nDefs
     in case matches of
         [] ->
