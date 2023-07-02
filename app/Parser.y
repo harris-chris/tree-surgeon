@@ -22,32 +22,22 @@ import AST
 -- Identifiers
   identifier 			{ L.RangedToken (L.Identifier _) _ }
 -- Operators
-  '|'        			{ L.RangedToken L.Or _ }
   '&'				{ L.RangedToken L.And _ }
   '!'				{ L.RangedToken L.Not _ }
--- Matchers
-  ancestorNameIs  		{ L.RangedToken L.AncestorNameIs _ }
-  ancestorNameStartsWith 	{ L.RangedToken L.AncestorNameStartsWith _ }
-  ancestorNameEndsWith 		{ L.RangedToken L.AncestorNameEndsWith _ }
-  ancestorNameContains 		{ L.RangedToken L.AncestorNameContains _ }
-  nameIs  			{ L.RangedToken L.NameIs _ }
-  nameStartsWith  		{ L.RangedToken L.NameStartsWith _ }
-  nameEndsWith  		{ L.RangedToken L.NameEndsWith _ }
-  nameContains  		{ L.RangedToken L.NameContains _ }
-  all 				{ L.RangedToken L.All _ }
-  none 				{ L.RangedToken L.None _ }
--- Syntax
-  let 				{ L.RangedToken L.Let _ }
-  '=' 				{ L.RangedToken L.Eq _ }
-  in 				{ L.RangedToken L.In _ }
-  '('        			{ L.RangedToken L.LPar _ }
-  ')'        			{ L.RangedToken L.RPar _ }
+  '|'        			{ L.RangedToken L.Or _ }
 -- List
   '['        			{ L.RangedToken L.LBrack _ }
   ']'        			{ L.RangedToken L.RBrack _ }
-  ';'        			{ L.RangedToken L.SemiColon _ }
--- Values
+-- Literals
+  file     			{ L.RangedToken L.File _ }
   string     			{ L.RangedToken (L.String _) _ }
+-- Syntax
+  let 				{ L.RangedToken L.Let _ }
+  '=' 				{ L.RangedToken L.Eq _ }
+  ';'        			{ L.RangedToken L.SemiColon _ }
+  in 				{ L.RangedToken L.In _ }
+  '('        			{ L.RangedToken L.LPar _ }
+  ')'        			{ L.RangedToken L.RPar _ }
 
 %right name
 %left let
@@ -71,27 +61,19 @@ import AST
 %%
 
 exp :: { Exp L.Range }
-  : exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
-  | exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
+  : exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
   | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameIs exp 			{ AncestorNameIs (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameStartsWith exp  	{ AncestorNameStartsWith (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameEndsWith exp  		{ AncestorNameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | ancestorNameContains exp  		{ AncestorNameContains (L.rtRange $1 <-> info $2) $2 }
-  | identifier { unTok $1 (\range (L.Identifier nm) -> EVar range $ VarName nm) }
-  | nameIs exp 				{ NameIs (L.rtRange $1 <-> info $2) $2 }
-  | nameStartsWith exp    		{ NameStartsWith (L.rtRange $1 <-> info $2) $2 }
-  | nameEndsWith exp    		{ NameEndsWith (L.rtRange $1 <-> info $2) $2 }
-  | nameContains exp 			{ NameContains (L.rtRange $1 <-> info $2) $2 }
-  | all 				{ All (L.rtRange $1 <-> L.rtRange $1) }
-  | none 				{ None (L.rtRange $1 <-> L.rtRange $1) }
+  | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
+  | identifier listParse(exp)
+      { unTok (info $1 <-> info (last $2)) (\rng (L.Identifier n) -> EFunc rng (VarName n)) $2 }
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | string        			{ unTok $1 (\range (L.String str) -> EString range $ unQuote str) }
+  | file 				{ EFile (L.rtRange $1) }
+  | string        			{ unTok $1 (\rng (L.String s) -> EString rng $ unQuote s) }
   | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
 
-  name :: { VarName }
-  : identifier { unTok $1 (\range (L.Identifier nm) -> VarName nm) }
+name :: { VarName }
+  : identifier 				{ unTok $1 (\_ (L.Identifier n) -> VarName n) }
 
 listParse(typ) :: { [Exp L.Range] }
   : listParse(typ) typ 		{ $2 : $1 }
@@ -103,8 +85,8 @@ namedExpr :: { NamedExpr L.Range }
 
 decParse(typ) :: { [NamedExpr L.Range] }
   : decParse(typ) typ 		{ $2 : $1 }
-  | typ		 	        	{ [ $1 ] }
-  | 		       				{ [] }
+  | typ	 	        	{ [ $1 ] }
+  | 	       			{ [] }
 
 {
 

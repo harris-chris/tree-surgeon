@@ -6,7 +6,7 @@ module TreeFilter
     , filterTreeWith
     , getExcluded
     , toElements
-    , TreeSurgeonException(..)
+    , TSException(..)
   ) where
 
 import Control.Exception
@@ -74,17 +74,17 @@ filterTreeDirs (Dir name []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: DirTree a -> ByteString -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith :: DirTree a -> ByteString -> Either TSException (DirTree FsObjData)
 filterTreeWith tree filterStr =
     let expE = L.runAlex filterStr parseTreeSurgeon
         expE' = (case expE of
             Left errStr -> Left $ Couldn'tLex errStr
-            Right exprString -> Right exprString) :: Either TreeSurgeonException (Exp L.Range)
-        denamedExpE' = deName =<< expE'
-        matcherE = getMatcher =<< denamedExpE'
+            Right exprString -> Right exprString) :: Either TSException (Exp L.Range)
+        expE'' = resolve =<< expE'
+        matcherE = getMatcher =<< expE''
     in matcherE >>= filterTreeWith' (toElements tree)
 
-filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TreeSurgeonException (DirTree FsObjData)
+filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TSException (DirTree FsObjData)
 filterTreeWith' tree@(Dir name _) fileMatcher =
     let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree
         filteredContents = filterTreeDirs' <$> (contents filesFiltered)

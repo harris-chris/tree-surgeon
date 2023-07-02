@@ -6,10 +6,8 @@ module AST
     , NamedExpr(..)
     , VarName(..)
     , FsObjData(..)
-    , IsExp(..)
     , IsFilePath(..)
-    , TreeSurgeonException(..)
-    , Matcher
+    , TSException(..)
   ) where
 
 import Control.Exception
@@ -23,45 +21,38 @@ import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
 
-type Matcher = (FsObjData -> Bool)
-type MatcherE a = Either TreeSurgeonException Matcher
-type NameMatcherFunc = (ByteString -> ByteString -> Bool)
+import Functions
 
-data TreeSurgeonException
-    = Couldn'tParse String
-    | Couldn'tLex String
-    | NameMatcherNeedsString String
-    | AncestorNameIsNeedsString String
-    | CanOnlyFilterDirectory String
-    | UnrecognizedName [ByteString] String
+data TSException =
+    Couldn'tLex String
+    | Couldn'tParse String
     | DuplicateName String String
+    | FuncArgs String [String]
+    | NotAFunction String [String]
+    | UnrecognizedName [String] String
     deriving (Eq)
 
-instance Exception TreeSurgeonException
+instance Exception TSException
 
-instance Show TreeSurgeonException where
+instance Show TSException where
     show (Couldn'tLex expStr) =
         "Error in expression:\n" <> expStr
     show (Couldn'tParse expStr) =
         "Error in expression:\n" <> expStr
-    show (NameMatcherNeedsString exp) =
-        "Error:\n" <> (show exp) <>
-        "\nname matching functions must be passed string or list of strings"
-    show (AncestorNameIsNeedsString exp) =
-        "Error:\n" <> (show exp) <>
-        "\nancestorNameIs must be passed string or list of strings"
-    show (CanOnlyFilterDirectory fpath) =
-        "Error: unable to filter " <> (show fpath) <>
-        "; it is a file, not a directory"
     show (UnrecognizedName varsInScope name) =
         "Error: Unrecognized name " <> name
         <> "; have names ["
-        <> (intercalate ", " $ BS.unpack <$> varsInScope)
+        <> (intercalate ", " varsInScope)
         <> "] in scope"
     show (DuplicateName dec name) =
         "Error: name " <> name
         <> " in declaration " <> dec
         <> " already exists"
+    show (NotAFunction name args) =
+        "Error: name " <> name
+        <> " is being applied to arguments "
+        <> (intercalate " " args)
+        <> " but is not a function"
 
 data FsObjData =
     FileData {
@@ -76,70 +67,99 @@ class IsFilePath a where
 instance IsFilePath FsObjData where
     toFilePath (FileData basename pts) = joinPath $ basename:(BS.unpack <$> pts)
 
-class Show exp => IsExp exp where
-    getMatcher :: exp -> MatcherE exp
-    deName :: exp -> Either TreeSurgeonException exp
-
-data VarName
-    = VarName ByteString
-    deriving (Eq, Show)
-
 getNameOnly :: VarName -> ByteString
 getNameOnly (VarName bs) = bs
 
 type NamedExpr a = (VarName, Exp a)
 
--- data Dec a
---   = Let (VarName a) (Exp a) (Exp a)
---   deriving (Foldable, Show)
-
 data Exp a =
-    Or a (Exp a) (Exp a)
-    | And a (Exp a) (Exp a)
+    -- Logical operators
+    And a (Exp a) (Exp a)
     | Not a (Exp a)
-    | AncestorNameIs a (Exp a)
-    | AncestorNameStartsWith a (Exp a)
-    | AncestorNameEndsWith a (Exp a)
-    | AncestorNameContains a (Exp a)
-    | NameIs a (Exp a)
-    | NameStartsWith a (Exp a)
-    | NameEndsWith a (Exp a)
-    | NameContains a (Exp a)
-    | All a
-    | None a
-    | EVar a VarName
-    | EPar a (Exp a)
-    | EString a ByteString
+    | Or a (Exp a) (Exp a)
+    -- Function
+    | EFunc a VarName [Exp a]
+    -- Literals
+    | EFile a
     | EList a [Exp a]
+    | EString a ByteString
+    -- Syntax
+    | EPar a (Exp a)
     | Let a [NamedExpr a] (Exp a)
-    | ObjData FsObjData -- we replace the `file` var with this
-    deriving (Foldable, Functor, Show, Traversable)
+    deriving (Foldable, Functor, Eq, Show, Traversable)
 
-resolveFileVar :: (Show a, Eq a) => Exp a -> FsObjData -> Either TreeSurgeonException (Exp a)
-resolveFileVar exp fsObjData = deName' [(VarName $ BS.pack "file", ObjData fsObjData)] exp
+data VarName
+    = VarName ByteString
+    deriving (Eq, Show)
 
-deNameExp :: (Show a, Eq a) => Exp a -> Either TreeSurgeonException (Exp a)
-deNameExp exp = deName' [] exp
+-- resolveFileVar :: (Show a, Eq a) => Exp a -> FsObjData -> Either TSException (Exp a)
+-- resolveFileVar exp fsObjData = deName' [(VarName $ BS.pack "file", ObjData fsObjData)] exp
 
-deName' :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TreeSurgeonException (Exp a)
-deName' nameDefs dec@(Let _ namedExprs exp) =
-    case namesMatch nameDefs namedExprs of
-        [] -> let nameDefs' = namedExprs ++ nameDefs
-              in deName' nameDefs' exp
-        d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
-deName' nameDefs (EVar _ name@(VarName nmStr)) =
-    let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nameDefs
+deName :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TSException (Exp a)
+deName nDefs (And a x y) = And a <$> (deName nDefs x) <*> (deName nDefs y)
+deName nDefs (Not a x) = Not a <$> (deName nDefs x)
+deName nDefs (Or a x y) = Or a <$> (deName nDefs x) <*> (deName nDefs y)
+deName nDefs (EFunc a v@(VarName nmStr) args) =
+    let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nDefs
     in case matches of
-        [] -> let varsInScope = (getNameOnly . fst) <$> nameDefs
-              in Left $ UnrecognizedName varsInScope (show nmStr)
-        [x] -> let expr = snd x
-               in deName' nameDefs expr
-deName' nameDefs (Or a x y) = Or a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
-deName' nameDefs (And a x y) = And a <$> (deName' nameDefs x) <*> (deName' nameDefs y)
-deName' nameDefs (Not a x) = Not a <$> (deName' nameDefs x)
-deName' nameDefs (EPar a x) = EPar a <$> (deName' nameDefs x)
-deName' nameDefs (EList a xs) = EList a <$> mapM (deName' nameDefs) xs
-deName' nameDefs exp = Right $ exp
+        [] ->
+            EFunc a v <$> mapM (deName nDefs) args
+        [(_, EFunc a' v' args')] ->
+            let combinedArgs = args' ++ args
+            in EFunc a v' <$> mapM (deName nDefs) combinedArgs
+        [x] ->
+            Left $ NotAFunction (BS.unpack nmStr) (show <$> args)
+deName nDefs (EList a xs) = EList a <$> mapM (deName nDefs) xs
+deName nDefs exp@(EString _ _) = Right $ exp
+deName nDefs (EPar a x) = EPar a <$> (deName nDefs x)
+deName nDefs dec@(Let _ namedExprs exp) =
+    case namesMatch nDefs namedExprs of
+        [] -> let nDefs' = namedExprs ++ nDefs
+              in deName nDefs' exp
+        d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
+deName nDefs exp = Right $ exp
+
+-- resolveFuncs :: (Show a, Eq a) => FsObjData -> Exp a -> Either TSException (Exp a)
+-- resolveFuncs fsObjData (And a x y) =
+--     And a <$> (resolveFuncs fsObjData x) <*> (resolveFuncs fsObjData y)
+-- resolveFuncs fsObjData (Not a x) =
+--     Not a <$> (resolveFuncs fsObjData x)
+-- resolveFuncs fsObjData (Or a x y) =
+--     Or a <$> (resolveFuncs fsObjData x) <*> (resolveFuncs fsObjData y)
+-- resolveFuncs fsObjData (EList a xs) =
+--     EList a <$> mapM (resolveFuncs fsObjData) xs
+
+--     let args' = mapM (evaluate . (deName' nDefs)) args
+--     in parseFunc name <$> args'
+--         where parseFunc name args'
+--             | name == "name" && null args = Right $ EString rng $ nameF name
+--             | name == "name" = Left $ FuncArgs (BS.unpack name) (show <$> args)
+
+-- resolveFuncs fsObjData exp@(EString _ _) = Right $ exp
+-- resolveFuncs fsObjData (EPar a x) = EPar a <$> (resolveFuncs fsObjData x)
+-- resolveFuncs fsObjData dec@(Let _ namedExprs exp) =
+--     case namesMatch fsObjData namedExprs of
+--         [] -> let fsObjData' = namedExprs ++ fsObjData
+--               in resolveFuncs fsObjData' exp
+--         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
+-- resolveFuncs fsObjData exp = Right $ exp
+
+-- simplifyLit' :: (Show a, Eq a) => [NamedExpr a] -> Lit a -> Either TSException (Lit a)
+-- simplifyLit' nameDefs (Func rng (VarName name) args) =
+--     let args' = mapM (evaluate . (simplifyExp' namedDefs)) args
+--     in parseFunc name <$> args'
+--         where parseFunc name args'
+--             | name == "name" && null args = Right $ EString rng $ nameF name
+--             | name == "name" = Left $ FuncArgs (BS.unpack name) (show <$> args)
+-- simplifyLit' nameDefs (EList a xs) = EList a <$> mapM (simplifyExp' nameDefs) xs
+
+-- parseFunc :: ByteString -> [
+
+-- simplifyExp :: (Show a, Eq a) => Exp a -> Either TSException (Exp a)
+-- simplifyExp exp = do
+--     exp' <- deName exp
+--     exp'' <- resolveFuncs exp
+--     return exp''
 
 namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
 namesMatch xs ys = namesMatch' xs ys []
@@ -150,67 +170,22 @@ namesMatch' (x:xs) ys acc =
     ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
 namesMatch' [] ys acc = acc
 
-instance (Eq a, Show a) => IsExp (Exp a) where
-    deName = deNameExp
-    getMatcher (Or _ x y) =
-        case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \objD -> fx objD || fy objD
-            (Left err, _) -> Left err
-            (_, Right err) -> Right err
-    getMatcher (And _ x y) =
-        case ((getMatcher x), (getMatcher y)) of
-            (Right fx, Right fy) -> Right $ \objD -> fx objD && fy objD
-            (Left err, _) -> Left err
-            (_, Right err) -> Right err
-    getMatcher (Not _ exp) =
-        (\matcher -> not . matcher) <$> getMatcher exp
-    getMatcher (AncestorNameIs _ exp) =
-        ancestorNameMatchesWith (==) exp
-    getMatcher (AncestorNameStartsWith _ exp) =
-        ancestorNameMatchesWith BS.isPrefixOf exp
-    getMatcher (AncestorNameEndsWith _ exp) =
-        ancestorNameMatchesWith BS.isSuffixOf exp
-    getMatcher (AncestorNameContains _ exp) =
-        ancestorNameMatchesWith isInfixOf' exp
-        where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
-    getMatcher (NameIs _ exp) =
-        nameMatchesWith (==) exp
-    getMatcher (NameStartsWith _ exp) =
-        nameMatchesWith BS.isPrefixOf exp
-    getMatcher (NameEndsWith _ exp) =
-        nameMatchesWith BS.isSuffixOf exp
-    getMatcher (NameContains _ exp) =
-        nameMatchesWith isInfixOf' exp
-        where isInfixOf' subStr str = isInfixOf (BS.toStrict subStr) (BS.toStrict str)
-    getMatcher (All _) = Right (\_ -> True)
-    getMatcher (None _) = Right (\_ -> False)
-    getMatcher (EVar _ _) =
-        error "EVar encountered in getMatcher processing; please run deName first"
-    getMatcher (EPar _ x) = getMatcher x
-    getMatcher (Let _ _ _) =
-        error "Let encountered in getMatcher processing; please run deName first"
-    getMatcher exp = Left $ Couldn'tParse $ show exp
-
-        -- if innerName == outerName
-        --     then getMatcher namedExpr
-        --     else Left $ UnrecognizedName (show dec) (show outerName)
-
-matchersToMatcherWithAny :: (Exp a -> MatcherE a) -> [Exp a] -> MatcherE a
-matchersToMatcherWithAny f exps =
-    let matcherEList = f <$> exps
-        eitherListMatcher = sequenceA matcherEList
-        matchersToMatcherF = \matchers -> (\objD -> any (\f -> f objD) matchers)
-    in matchersToMatcherF <$> eitherListMatcher
-
-ancestorNameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
-ancestorNameMatchesWith f (EString _ x) =
-    Right $ \objD -> any (f x) (parents objD)
-ancestorNameMatchesWith f (EList _ exps) =
-    matchersToMatcherWithAny (ancestorNameMatchesWith f) exps
-ancestorNameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
-
-nameMatchesWith :: Show a => NameMatcherFunc -> Exp a -> MatcherE a
-nameMatchesWith f (EString _ x) = Right $ \objD -> f x $ (BS.pack $ basename objD)
-nameMatchesWith f (EList _ exps) = matchersToMatcherWithAny (nameMatchesWith f) exps
-nameMatchesWith f exp = Left $ NameMatcherNeedsString $ show exp
+resolveBuiltins :: (Eq a, Show a) => Exp a -> Either TSException Bool
+resolveBuiltins (And _ x y) =
+    case ((resolveBuiltins x), (resolveBuiltins y)) of
+        (Right bx, Right by) -> Right $ bx && by
+        (Left err, _) -> Left err
+        (_, Left err) -> Left err
+resolveBuiltins (Not _ exp) =
+    not <$> resolveBuiltins exp
+resolveBuiltins (Or _ x y) =
+    case ((resolveBuiltins x), (resolveBuiltins y)) of
+        (Right bx, Right by) -> Right $ bx || by
+        (Left err, _) -> Left err
+        (_, Left err) -> Left err
+resolveBuiltins (EList _ xs) = error "Encountered EList"
+resolveBuiltins (EString _ x) = error "Encountered EString"
+resolveBuiltins (EPar _ x) = resolveBuiltins x
+resolveBuiltins (Let _ namedExprs exp) = error "Encountered Let"
+resolveBuiltins exp = Left $ Couldn'tParse $ show exp
 

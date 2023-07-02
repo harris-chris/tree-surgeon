@@ -23,22 +23,17 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 tokens :-
 
-<0> $white+ 							{ skip }
--- Operators
-<0> "|"								{ tok Or }
-<0> "&"								{ tok And }
-<0> "!"								{ tok Not }
--- Matchers
-<0> ancestorNameIs		{ tok AncestorNameIs }
-<0> ancestorNameStartsWith	{ tok AncestorNameStartsWith }
-<0> ancestorNameEndsWith	{ tok AncestorNameEndsWith }
-<0> ancestorNameContains	{ tok AncestorNameContains }
-<0> nameIs        		{ tok NameIs }
-<0> nameStartsWith      	{ tok NameStartsWith }
-<0> nameEndsWith        	{ tok NameEndsWith }
-<0> nameContains        	{ tok NameContains }
-<0> all         		{ tok All }
-<0> none 		      	{ tok None }
+<0> $white+ 			{ skip }
+-- Logical operators
+<0> "&"				{ tok And }
+<0> "!"				{ tok Not }
+<0> "|"				{ tok Or }
+-- List
+<0> "["     			{ tok LBrack }
+<0> "]"     			{ tok RBrack }
+-- Literals
+<0> "file" 			{ tok File }
+<0> \"[^\"]*\" 			{ tokString }
 -- Syntax
 <0> "let"			{ tok Let }
 <0> "="				{ tok Eq }
@@ -46,11 +41,6 @@ tokens :-
 <0> "in"			{ tok In }
 <0> "("     			{ tok LPar }
 <0> ")"     			{ tok RPar }
--- List
-<0> "["     			{ tok LBrack }
-<0> "]"     			{ tok RBrack }
--- Values
-<0> \"[^\"]*\" 			{ tokString }
 -- Comments
 <0> "--" .*\n 			{ skip }
 -- Identifiers
@@ -103,32 +93,22 @@ data Token
   -- Identiifers
   = Identifier ByteString
   -- Logical Operators
-  | Or
   | And
   | Not
-  -- Matchers
-  | AncestorNameIs
-  | AncestorNameStartsWith
-  | AncestorNameEndsWith
-  | AncestorNameContains
-  | NameIs
-  | NameStartsWith
-  | NameEndsWith
-  | NameContains
-  | All
-  | None
-  -- Constants
+  | Or
+  -- Literals
   | String ByteString
-  -- Keywords
-  | Let
-  | Eq
-  | In
+  | File
   -- Parentheses
   | LPar
   | RPar
   -- Lists
   | LBrack
   | RBrack
+  -- Syntax
+  | Let
+  | Eq
+  | In
   | SemiColon
   -- EOF
   | EOF

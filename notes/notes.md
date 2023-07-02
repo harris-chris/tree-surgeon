@@ -1,3 +1,84 @@
+Either we:
+- Have special syntax for the variable name, `file` or `row` or whatever we're calling it, and replace that special syntax with the real variable at some point. This variable has a special type (it is not a string). This would not get replaced during the `deName` stage, but would survive until the `deFunc` stage and get replaced with strings or whatever else then.
+- in deFuncs, we have some built-in functions, like `basename`. Right now we have no syntax to create functions, but this is something we want to add. So if the user has done:
+    `let nameMatchesMyFile = \a b -> (==) "myFile" b in nameMatchesMyFile (basename file)`
+    or `let nameMatchesMyFile = ((==) "myFile") in nameMatchesMyFile (basename file)`
+    we want this to deName to
+    `(==) (basename file) "myFile"`
+    so we need the parser to recognize that `nameMatchesMyFile (basename file)` in the original is a function, which it should already do
+    but to do the let replacement, we probably need some special case, which combines the two recognized functions (`(==) "myFile"` and `nameMatchesMyFile (basename file)`). Something like:
+  `Let [("nameMatchesMyFile", EFunc _ "==" ["myFile"])] (EFunc _ "nameMatchesMyFile" [(basename file)]`
+  `deName`s to `EFunc _ "==" ["myFile", (basename file)]`
+  which then `deFuncs` to `EFunc _ "==" ["myFile", "file_a.cpp"]`
+  and then `deFuncs` again to `False`.
+  So the conclusion of all this is that:
+    - A variable name is just a special case of a function that has no arguments
+    - we need Bools in the AST.
+    - we need a special case of `deName` to deal with this, and
+    - `==` needs to be a function, not a piece of AST syntax.
+    - Within the parser, we can make a function infix if we want to
+    - We need to supply the built-in functions (eg `==` to `deName`)
+-
+-
+
+This system doesn't work, because these stages can be nested within one another.
+Only stuff that can't contain other stuff can be done like this, like literals. A Func can contain a `StageAExp` as one of its arguments, so you'd need to have `StageAExp` as its type. I also worry that this will generate an insane syntax tree.
+
+Could this be done with parametric types? So types like `Par` are parenthesized initially with a union type containing everything, then after `resolveNames`, they are parenthesized with a union type containing everything minus names.
+
+(Names + Lets) + Values (includes Literals) + Booleans + Logicals (includes False/True)
+-> `resolveNames` ->
+Values + Booleans + Logicals
+-> `resolveLitFuncs` ->
+Literals + Booleans + Logicals
+-> `resolveBoolFuncs` ->
+Logicals (And/Or/Not/Parentheses/False/True)
+
+Logicals + Bools + (Literal == Literal)
+-> `resolveEqualities` ->
+Logicals + Bools
+-> `resolveLogicals` ->
+Bool
+
+collectively `resolveToBool`
+
+So a three-stage process. Could probably combine stages 2 & 3.
+
+Syntax
+  which has `resolve` so
+    - Let
+Resolvable (eg Or, Eqs, here Eqs takes Values not Exps)
+Value
+
+Funcs resolve to a value. A value maybe a Bool.
+All Exps resolve to a Bool.
+`name row` is of type `String`
+
+where Value does not resolve to Bool but Resolvable does.
+do we though? Maybe we just need to simplify everything down to Values.
+
+In some way, isn't all matching involving the comparison operators? What would not be? All matchers have to return boolean. What about using eg any though? Or startsWith?
+`any (startsWith "file") files`
+
+Some functions are matchers and some are not.
+- `name` is not a matcher, eg `name path`
+- `nameIs` is a matcher, but maybe == should be the only way of matching?
+
+We could either have a `Matcher` type that can do `getMatcher`, or have a `resolve` function that's like `deName` but also resolves non-matcher functions like `name`. That second one feels easiest.
+Do we want to consider eg `==` as a function? We probably wouldn't want to have it prefix. But it should be possible to have it infix.
+
+If we allow people to define custom functions via lambdas and assignments:
+`let startsWithFile = \x -> startsWith "file" in startsWithFile str`
+then we have to have a generic `func` exp, rather than separate AST objects for different functions.
+
+If we have a `func` exp, then it has to take a list of arguments, of unknown number. This makes parsing quite hard, you then have to have a way of knowing when you've hit the next valid expression. But maybe actually it's not.
+
+We are proposing to have a `func` exp, which takes any number of arguments.
+
+- Currently all the matcher `Exp`s do not take an argument, it might be more obvious what to do if they did. At the AST stage we are just resolving the grammar, so the matcher expressions should resolve to `Matcher VarName`.
+- The `Exp` type might need to have `getMatcher
+- Have a special AST object, `File`, for which `getMatcher` gives a `Matcher` that looks takes the FsObjData and
+
 We could have:
 - a function which has a single parameter, a list of directories, with the file (note that this may be a directory) as its final object. Have `basename` and `dirnames` functions which effectively are just `last` and `init`. The advantage of this is that we can have a single set of functions, eg `nameIs`, not `ancestorNameIs`. What would we call this object? `row`? Have a `type` function to tell if it's a file or a directory. Make sure these names are consistent with unix convention.
 - or, the argument could be the actual full string, eg `this/that/my_file.cpp`. Then `basename` gives you `my_file.cpp`.
