@@ -15,22 +15,25 @@ import Data.Maybe
 import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
-import AST
 import qualified Lexer as L
+
+import AST
+import ASTFuncs
 import Output
+import TSException
 import Parser (parseTreeSurgeon)
 
-toElements :: DirTree a -> DirTree FsObjData
+toElements :: DirTree a -> DirTree FData
 toElements t = toElements' [] t
 
-toElements' :: [ByteString] -> DirTree a -> DirTree FsObjData
+toElements' :: [ByteString] -> DirTree a -> DirTree FData
 toElements' parents (File name _) = File name (FileData name parents)
 toElements' parents (Dir name contents) =
     let contents' = map (toElements' ((pack name):parents)) contents
     in Dir name contents'
 toElements' _ (Failed name error) = Failed name error
 
-applyFilterWith :: FileName -> (DirTree FsObjData -> IO()) -> ByteString -> IO ()
+applyFilterWith :: FileName -> (DirTree FData -> IO()) -> ByteString -> IO ()
 applyFilterWith dirname ioF filterStr  =
     do
         anchoredTree <- readDirectoryWith return dirname
@@ -39,7 +42,7 @@ applyFilterWith dirname ioF filterStr  =
             Left err -> throw $ err
             Right filtered -> ioF filtered
 
-applyFilterWithComparative :: FileName -> (DirTree FsObjData -> DirTree FsObjData -> IO()) -> ByteString -> IO ()
+applyFilterWithComparative :: FileName -> (DirTree FData -> DirTree FData -> IO()) -> ByteString -> IO ()
 applyFilterWithComparative dirname ioF filterStr =
     do
         anchoredTree <- readDirectoryWith return dirname
@@ -48,17 +51,17 @@ applyFilterWithComparative dirname ioF filterStr =
             Left err -> throw $ err
             Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
-getExcluded :: Bool -> DirTree FsObjData -> DirTree FsObjData -> [String]
+getExcluded :: Bool -> DirTree FData -> DirTree FData -> [String]
 getExcluded ancestors origTree filteredTree =
     let arrayOrig = toBashArray ancestors origTree
         arrayFiltered = toBashArray ancestors filteredTree
     in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
-filterTreeFilesWith :: Matcher -> DirTree FsObjData -> Bool
+filterTreeFilesWith :: Matcher -> DirTree FData -> Bool
 filterTreeFilesWith f (File name objData) = f objData
 filterTreeFilesWith _ _ = True
 
-filterTreeDirs' :: DirTree FsObjData -> Maybe (DirTree FsObjData)
+filterTreeDirs' :: DirTree FData -> Maybe (DirTree FData)
 filterTreeDirs' f@(File _ _) = Just f
 filterTreeDirs' f@(Failed _ _) = Just f
 filterTreeDirs' (Dir name contents) =
@@ -68,13 +71,13 @@ filterTreeDirs' (Dir name contents) =
         then Just $ Dir name $ catMaybes filtered
         else Nothing
 
-filterTreeDirs :: DirTree FsObjData -> Bool
+filterTreeDirs :: DirTree FData -> Bool
 filterTreeDirs (File _ _) = True
 filterTreeDirs (Dir name []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: DirTree a -> ByteString -> Either TSException (DirTree FsObjData)
+filterTreeWith :: DirTree a -> ByteString -> Either TSException (DirTree FData)
 filterTreeWith tree filterStr =
     let expE = L.runAlex filterStr parseTreeSurgeon
         expE' = (case expE of
@@ -84,7 +87,7 @@ filterTreeWith tree filterStr =
         matcherE = getMatcher =<< expE''
     in matcherE >>= filterTreeWith' (toElements tree)
 
-filterTreeWith' :: DirTree FsObjData -> Matcher -> Either TSException (DirTree FsObjData)
+filterTreeWith' :: DirTree FData -> Matcher -> Either TSException (DirTree FData)
 filterTreeWith' tree@(Dir name _) fileMatcher =
     let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree
         filteredContents = filterTreeDirs' <$> (contents filesFiltered)

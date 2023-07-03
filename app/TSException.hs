@@ -11,7 +11,7 @@ data TSException =
     | Couldn'tParse String
     | DuplicateName String String
     | FuncArgs String [String]
-    | FuncWrongNumArgs String Integer Integer
+    | FuncWrongNumArgs String Int Int
     | NotAFunction String [String]
     | UnrecognizedName [String] String
     deriving (Eq)

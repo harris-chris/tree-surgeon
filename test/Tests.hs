@@ -72,7 +72,7 @@ flatFilesOnly tree =
   ensuring that what has been filtered out by one string is the inverse of what has
   been filtered out by that string's inverse.
 -}
-applyTwoFiltersAndCompare :: FileName -> LBS.ByteString -> LBS.ByteString -> (DirTree FsObjData -> DirTree FsObjData -> DirTree FsObjData -> IO()) -> IO ()
+applyTwoFiltersAndCompare :: FileName -> LBS.ByteString -> LBS.ByteString -> (DirTree FData -> DirTree FData -> DirTree FData -> IO()) -> IO ()
 applyTwoFiltersAndCompare dirname filtA filtB compareF =
     do
         origTree <- (toElements . dirTree) <$> readDirectoryWith return dirname

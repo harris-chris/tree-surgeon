@@ -20,7 +20,7 @@ import TSException
 --     -- Literals
 --     | RList [ResolvedExp]
 --     | RString ByteString
---     | RFile FsObjData
+--     | RFile FData
 --     | RBool Bool
 --     -- Syntax
 --     | RPar ResolvedExp
@@ -29,12 +29,12 @@ import TSException
 fileVarName :: String
 fileVarName = "file"
 
-basenameFunc :: (Show a, Eq a) => [Exp a] -> Either TSException Exp a
+basenameFunc :: (Show a, Eq a) => [Exp a] -> Either TSException (FData -> Bool)
 basenameFunc [(EString a str)] = case str of
-    "file" -> Right $ basename fsObjData
-    _ -> Left FuncArgs "basename" [(Estring a str)]
-basenameFunc args@(x:y:z) = Left $ FuncWrongArgsNum "basename" (length args) 2
+    "file" -> Right $ basename
+    _ -> Left $ FuncArgs "basename" [(show $ EString a str)]
+basenameFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2
 
-eqsFunc :: (Show a, Eq a) => [Exp a] -> Either TSException Exp a
-eqsFunc (x:y:[]) = Right $ x == y
-eqsFunc args@(x:y:z) = Left $ FuncWrongArgsNum "basename" (length args) 2
+eqsFunc :: (Show a, Eq a) => [Exp a] -> Either TSException (FData -> Bool)
+eqsFunc (x:y:[]) = Right $ \_ -> x == y
+eqsFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2

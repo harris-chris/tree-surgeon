@@ -1,8 +1,28 @@
 Notes on where we currently are:
 - Read the stuff directly below, it's useful
-- We need to move the AST to its own file, because both Functions.hs and deFunc need it, and deFunc depends upon Functions.hs.
-- All going well
+- We want the `Either TSException` bits to be during parsing the expression. By the time it comes to applying it, it should not be in an `Either`.
 
+`deName` just simplifies the `Exp` and has no relationship to the `file` object, so this can be run at any time. The tricky part is to have a bit of the process that goes from `Exp a` to `(FsObjData ->  Bool)`. This probably needs to be in the `deFunc` stage, where (non-Let-related) names are resolved.
+We possibly need a two-stage process:
+`deFuncA` goes `Exp a -> Either TSException (FData -> Exp a)` and resolves the functions that take `file` as an argument
+`deFuncB` deals with functions that don't relate to `file`, like `==`.
+or perhaps we have a single-stage process and just don't actually use the `file` argument in functions like `==`. Hard to resolve them otherwise, unless we replace them with new `Exp` constructors, like `Eqs`.
+
+`deFunc` should reduce the expression to
+- Logical operators
+- Built-in functions.
+
+*Functions*
+Currently you can partially apply built-in functions, you can't create your own.
+
+the original matcher looked like this:
+type Matcher = (FileName -> FsObjData -> Bool)
+type MatcherE a = Either TreeSurgeonException Matcher
+
+So this means we can have errors reading the expression, but not at run-time.
+It would be hard to achieve that in the new structure without having a multi-stage type system, where the types are different as we pass from `deName` to `deFunc` to `resolve`. We could probably have a single break:
+`deName` obvs needs to return `Either TSException (Exp a)`
+`deFunc`, this sounds hard with.:b
 
 Either we:
 - Have special syntax for the variable name, `file` or `row` or whatever we're calling it, and replace that special syntax with the real variable at some point. This variable has a special type (it is not a string). This would not get replaced during the `deName` stage, but would survive until the `deFunc` stage and get replaced with strings or whatever else then.

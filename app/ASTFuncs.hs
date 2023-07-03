@@ -1,7 +1,6 @@
 module ASTFuncs
   (
-    deName
-    , deFunc
+    getMatcher
   ) where
 
 import AST
@@ -32,23 +31,6 @@ deName nDefs dec@(Let _ namedExprs exp) =
         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
 deName nDefs exp = Right $ exp
 
--- Resolve all the remaining functions; since we have run deName prior to this point,
--- these functions should only be the built-in functions
-deFunc :: (Show a, Eq a) => FsObjData -> Exp a -> Either TSException (Exp a)
-deFunc fsObjData (And a x y) = And a <$> (deFunc fsObjData x) <*> (deFunc fsObjData y)
-deFunc fsObjData (Not a x) = Not a <$> (deFunc fsObjData x)
-deFunc fsObjData (Or a x y) = Or a <$> (deFunc fsObjData x) <*> (deFunc fsObjData y)
-deFunc fsObjData (EFunc a (VarName _ fName) args)
-    let args' = mapM (deFunc fsObjData) args
-    in parseFunc name <$> args'
-        where parseFunc name args'
-            | name == "==" = eqsFunc args'
-            | name == "basename" = basenameFunc args'
-deFunc fsObjData (EList a xs) = EList a <$> mapM (deFunc fsObjData) xs
-deFunc fsObjData exp@(EString _ _) = error "Literal is found outside a function"
-deFunc fsObjData (EPar a x) = EPar a <$> (deFunc fsObjData x)
-deFunc fsObjData dec@(Let _ namedExprs exp) = error "Let found in deFunc"
-
 namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
 namesMatch xs ys = namesMatch' xs ys []
 
@@ -58,22 +40,36 @@ namesMatch' (x:xs) ys acc =
     ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
 namesMatch' [] ys acc = acc
 
--- resolveBuiltins :: (Eq a, Show a) => Exp a -> Either TSException Bool
--- resolveBuiltins (And _ x y) =
---     case ((resolveBuiltins x), (resolveBuiltins y)) of
---         (Right bx, Right by) -> Right $ bx && by
---         (Left err, _) -> Left err
---         (_, Left err) -> Left err
--- resolveBuiltins (Not _ exp) =
---     not <$> resolveBuiltins exp
--- resolveBuiltins (Or _ x y) =
---     case ((resolveBuiltins x), (resolveBuiltins y)) of
---         (Right bx, Right by) -> Right $ bx || by
---         (Left err, _) -> Left err
---         (_, Left err) -> Left err
--- resolveBuiltins (EList _ xs) = error "Encountered EList"
--- resolveBuiltins (EString _ x) = error "Encountered EString"
--- resolveBuiltins (EPar _ x) = resolveBuiltins x
--- resolveBuiltins (Let _ namedExprs exp) = error "Encountered Let"
--- resolveBuiltins exp = Left $ Couldn'tParse $ show exp
+-- Resolve all the remaining functions; since we have run deName prior to this point,
+-- these functions should only be the built-in functions
+getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
+getMatcher (And a x y) = And <$> (getMatcher x) <*> (getMatcher y)
+    case ((getMatcher x), (getMatcher y)) of
+        (Right fx, Right fy) -> Right $ \d -> fx d && fy d
+        (Left err, _) -> Left err
+        (_, Right err) -> Right err
+getMatcher (Not a x) =
+    let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
+    in invertMatcher <$> getMatcher x
+getMatcher fData (Or a x y) =
+    case ((getMatcher x), (getMatcher y)) of
+        (Right fx, Right fy) -> Right $ \d -> fx d || fy d
+        (Left err, _) -> Left err
+        (_, Right err) -> Right err
+getMatcher (EFunc a (VarName _ fName) args)
+    let args' = mapM getMatcher args
+    in parseFunc name <$> args'
+        where parseFunc name args'
+            | name == "==" = eqsFunc args'
+            | name == "basename" = basenameFunc args'
+-- All the literal types should already be part of function arguments
+getMatcher (EList a xs) = error "List is found outside a function"
+getMatcher (EString _ _) = error "Literal is found outside a function"
+getMatcher (EPar a x) = EPar a <$> getMatcher x
+getMatcher (Let _ _ _) = error "Let found in getMatcher"
+
+getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
+resolve exp =
+    let expE = deName [] exp
+    in getMatcher =<< expE
 

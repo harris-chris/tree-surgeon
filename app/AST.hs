@@ -5,7 +5,7 @@ module AST
     Exp(..)
     , NamedExpr(..)
     , VarName(..)
-    , FsObjData(..)
+    , FData(..)
     , IsFilePath(..)
   ) where
 
@@ -17,7 +17,7 @@ import Debug.Trace
 import System.FilePath
 import System.Directory.Tree
 
-data FsObjData =
+data FData =
     FileData {
         basename :: String
         , parents :: [ByteString]
@@ -27,7 +27,7 @@ data FsObjData =
 class IsFilePath a where
     toFilePath :: a -> FilePath
 
-instance IsFilePath FsObjData where
+instance IsFilePath FData where
     toFilePath (FileData basename pts) = joinPath $ basename:(BS.unpack <$> pts)
 
 getNameOnly :: VarName a -> ByteString
