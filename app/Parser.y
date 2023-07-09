@@ -59,24 +59,26 @@ exp :: { Exp L.Range }
   | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
   -- Function
-  | False 				{ LBool (L.rtRange $1) False }
-  | True 				{ LBool (L.rtRange $1) True }
+  | lit  				{ ELit (info $1) $1 }
   | name listLitParse(lit) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
   -- Syntax
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decExpParse(namedExp) in exp 	{ ELet (L.rtRange $1 <-> info $4) $2 $4 }
-  | name 			 	{ EVar (info $1) $1 }
 
 lit :: { Lit L.Range }
   -- Literals
-  : '[' listLitParse(lit) ']'  		{ LList (L.rtRange $1 <-> L.rtRange $3) $2 }
+  : bool       				{ $1 }
+  | '[' listLitParse(lit) ']'  		{ LList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        			{ unTok $1 (\rng (L.String s) -> LString rng $ unQuote s) }
   -- Function
   | name listLitParse(lit) 		{ LFunc (info $1 <-> info (last $2)) $1 $2 }
   -- Syntax
   | '(' lit ')'				{ LPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | let decLitParse(namedLit) in lit 	{ LLet (L.rtRange $1 <-> info $4) $2 $4 }
-  | name 			 	{ LVar (info $1) $1 }
+  | let decExpParse(namedExp) in lit 	{ LLet (L.rtRange $1 <-> info $4) $2 $4 }
+
+bool :: { Lit L.Range  }
+  : False 				{ LBool (L.rtRange $1) False }
+  | True 				{ LBool (L.rtRange $1) True }
 
 name :: { VarName L.Range }
   : identifier 				{ unTok $1 (\rng (L.Identifier n) -> VarName rng n) }
@@ -94,16 +96,8 @@ listLitParse(typ) :: { [Lit L.Range] }
 namedExp :: { NamedExp L.Range }
   : name '=' exp ';'  	{ ($1, $3) }
 
-namedLit :: { NamedLit L.Range }
-  : name '=' lit ';'  	{ ($1, $3) }
-
 decExpParse(typ) :: { [NamedExp L.Range] }
   : decExpParse(typ) typ 	{ $2 : $1 }
-  | typ	 	        	{ [ $1 ] }
-  | 	       			{ [] }
-
-decLitParse(typ) :: { [NamedLit L.Range] }
-  : decLitParse(typ) typ 	{ $2 : $1 }
   | typ	 	        	{ [ $1 ] }
   | 	       			{ [] }
 

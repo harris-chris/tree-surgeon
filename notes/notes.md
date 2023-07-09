@@ -1,9 +1,36 @@
+Can we totally re-think this?
+- There is only an `LFunc`, it only ever resolves to a `Lit`.
+- At the end we assess to see if `ELit` is a bool.
+- Either we can do that, which would simplify things, or the current approach where we convert (`FData -> Lit a)` to `(FData -> Bool)` won't work
+- It should be possible to know at parse-time if `(FData -> Lit a)` can be converted to `(FData -> Bool)`. In which case:
+  - Just need LFunc, not EFunc
+  - ELet just needs to be able to define Lit, not Exp
+    - `And`, `Not`, `Or` could be functions not Exp. That way you can still do
+      - `let invertMatcher = Not in invertMatcher (basename file == "myFile")`
+  - Sounds like we might be back to having a single type. This is all on the assumption that we can know at parse-time whether a combination of `Exp`s will resolve to a Bool. I think that's possible.
+
+We need to be organized about where `deName`, `resolveLit` etc are called from.
+
+- `deNameExp` needs to call `deNameLit`.
+- should `resolveLit` be called from `getMatcher`? Would probably be fine.
+- or we could have a separate `resolve` phase
+- then call getMatcher.
+
+
+I'm not sure we need EVar/LVar, just EFunc/LFunc
+
 
 *Dealing with Let*
 Let has to be part of Exp, not least because it may exist at the top level, eg `let x = True in x`
 But you could also have `let x = "myFile" in (basename file) == x`, where the variable itself is a lit.
 And you could have `let x = basename file in takePrefix x`, and here the `let` expression itself resolve to a `Lit`. So I think we need both kinds of Let.
-
+The problem with this is that the ELet needs to be able to take NamedExp and NamedLit, ie it needs to be able to handle:
+  - `let x = "myFile" in (basename file) == x`
+  - `let x = True in x`
+I think we assume that `Let` exists at the `Exp` level, but can only take `NamedLit`. Then we make `let x = True in x` a special case, somehow. Though it is difficult to know how to do this. We could have an `EPureLit` type, but then we wouldn't know that it resolve to a bool at parse-time. Or maybe we would? if you `deNameExp` (or `resolve`) an `EPureLit`, then you could throw an error if it resolve to anything other than `LBool`. This is fine, but then how would we resolve:
+  - `let x = (== (basename file) "myFile") in x
+Because this is a `Let [NamedExp a] (Exp a)`
+Can ELit work here? Think it can. We convert `Exp a` to `Lit a` if we encounter an `LVar` when applying `deNameLit`.
 
 We probably need to treat `Bool` as an `EFunc`.
 We could make `Let` part of `Exp`, but have `deName :: Lit a ->...` which is called by `deName :: Exp a ->...`

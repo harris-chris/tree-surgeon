@@ -3,63 +3,89 @@ module ASTFuncs
     getMatcher
   ) where
 
+import qualified Data.ByteString.Lazy.Char8 as BS
+
 import AST
 import Functions
 import TSException
 
-deName :: (Show a, Eq a) => [NamedExpr a] -> Exp a -> Either TSException (Exp a)
-deName nDefs (And a x y) = And a <$> (deName nDefs x) <*> (deName nDefs y)
-deName nDefs (Not a x) = Not a <$> (deName nDefs x)
-deName nDefs (Or a x y) = Or a <$> (deName nDefs x) <*> (deName nDefs y)
-deName nDefs (EFunc a v@(VarName _ nmStr) args) =
+deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either TSException (Exp a)
+deNameExp nDefs (And a x y) = And a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
+deNameExp nDefs (Not a x) = Not a <$> (deNameExp nDefs x)
+deNameExp nDefs (Or a x y) = Or a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
+deNameExp _ x@(ELit _ _) = Right x
+-- let matchesFunc = (==) in matchesFunc (basename file) "myFile"
+-- let matchesBool = (==) (basename file) "myFile" in matchesBool
+-- In this second one, `matchesBool` is a function that takes no arguments? or a Bool?
+deNameExp nDefs (EFunc a v@(VarName _ nmStr) args) =
     let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nDefs
     in case matches of
         [] ->
-            EFunc a v <$> mapM (deName nDefs) args
+            EFunc a v <$> mapM (deNameLit nDefs) args
+        -- if the variable is a user-defined (potentially partially applied) function
+        -- ie, let isOne = (== 1) in isOne (filesize file)
         [(_, EFunc a' v' args')] ->
             let combinedArgs = args' ++ args
-            in EFunc a v' <$> mapM (deName nDefs) combinedArgs
+            in EFunc a v' <$> mapM (deNameLit nDefs) combinedArgs
         [x] ->
             Left $ NotAFunction (BS.unpack nmStr) (show <$> args)
-deName nDefs (EList a xs) = EList a <$> mapM (deName nDefs) xs
-deName nDefs exp@(EString _ _) = Right $ exp
-deName nDefs (EPar a x) = EPar a <$> (deName nDefs x)
-deName nDefs dec@(Let _ namedExprs exp) =
-    case namesMatch nDefs namedExprs of
-        [] -> let nDefs' = namedExprs ++ nDefs
-              in deName nDefs' exp
+deNameExp nDefs (EPar a x) = EPar a <$> (deNameExp nDefs x)
+deNameExp nDefs dec@(ELet _ namedExps exp) =
+    case namesMatchExp nDefs namedExps of
+        [] -> let nDefs' = namedExps ++ nDefs
+              in deNameExp nDefs' exp
         d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
-deName nDefs exp = Right $ exp
 
-namesMatch :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
-namesMatch xs ys = namesMatch' xs ys []
+deNameLit :: (Show a, Eq a) => [NamedExp a] -> Lit a -> Either TSException (Lit a)
+deNameLit nDefs (LList a xs) = LList a <$> mapM (deNameLit nDefs) xs
+deNameLit _ x@(LString _ _) = Right $ x
+deNameLit nDefs (LFunc a v@(VarName _ nmStr) args) =
+    let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nDefs
+    in case matches of
+        [] ->
+            LFunc a v <$> mapM (deNameLit nDefs) args
+        -- if the variable is a partially applied function
+        [(_, LFunc a' v' args')] ->
+            let combinedArgs = args' ++ args
+            in LFunc a v' <$> mapM (deNameLit nDefs) combinedArgs
+        [x] ->
+            Left $ NotAFunction (BS.unpack nmStr) (show <$> args)
+deNameLit nDefs (LPar a x) = LPar a <$> (deNameLit nDefs x)
+deNameLit nDefs dec@(LLet _ namedExps lit) =
+    case namesMatchExp nDefs namedExps of
+        [] -> let nDefs' = namedExps ++ nDefs
+              in deNameLit nDefs' lit
+        d:_ -> Left $ DuplicateName (show $ getNameOnly $ fst d) (show $ snd d)
 
-namesMatch' :: [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a] -> [NamedExpr a]
-namesMatch' (x:xs) ys acc =
-    namesMatch' xs ys $ acc
+namesMatchExp :: [NamedExp a] -> [NamedExp a] -> [NamedExp a]
+namesMatchExp xs ys = namesMatchExp' xs ys []
+
+namesMatchExp' :: [NamedExp a] -> [NamedExp a] -> [NamedExp a] -> [NamedExp a]
+namesMatchExp' (x:xs) ys acc =
+    namesMatchExp' xs ys $ acc
     ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
-namesMatch' [] ys acc = acc
+namesMatchExp' [] ys acc = acc
 
 -- Resolve literal-related functions, including `basename` and others related to the
 -- `file` variable.
 resolveLit :: (Show a, Eq a) => Lit a -> Either TSException (FData -> Lit a)
 resolveLit x@(LBool _ _) = Right $ \_ -> x
-resolveLit (LList a xs) = EList a <$> mapM resolveLit xs
-resolveLit (LPar a x) = LPar a <$> (resolveLit x)
-resolveLit x@(LString _ _) = Right $ \_ -> x
+resolveLit (LList a xs) = LList a <$> mapM resolveLit xs
 resolveLit (LFunc a v@(VarName _ nmStr) args) =
     let args' = mapM resolveLit args
-    in parseLitFunc name <$> args'
-resolveLit x@(LVar _ _) = Right $ \_ -> x
+    in parseLitFunc nmStr <$> args'
+resolveLit x@(LString _ _) = Right $ \_ -> x
+resolveLit (LPar a x) = LPar a <$> (resolveLit x)
+resolveLit (LLet _ _ _) = error "Encountered LLet during resolveLit"
 
 -- Resolve all the remaining functions; since we have run deName prior to this point,
 -- these functions should only be the built-in functions
 getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
-getMatcher (And a x y) = And <$> (getMatcher x) <*> (getMatcher y)
+getMatcher (And a x y) =
     case ((getMatcher x), (getMatcher y)) of
         (Right fx, Right fy) -> Right $ \d -> fx d && fy d
         (Left err, _) -> Left err
-        (_, Right err) -> Right err
+        (_, Right err) -> Left err
 getMatcher (Not a x) =
     let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
     in invertMatcher <$> getMatcher x
@@ -67,19 +93,19 @@ getMatcher (Or a x y) =
     case ((getMatcher x), (getMatcher y)) of
         (Right fx, Right fy) -> Right $ \d -> fx d || fy d
         (Left err, _) -> Left err
-        (_, Right err) -> Right err
-getMatcher (EFunc a (VarName _ fName) args)
+        (_, Right err) -> Left err
+getMatcher (ELit _ (LBool _ bl)) = Right $ \_ -> bl
+getMatcher (ELit _ x) =
+    let resolved = resolveLit x
+getMatcher (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
+getMatcher (EFunc a (VarName _ fName) args) =
     let args' = mapM resolveLit args
-    in parseFunc name <$> args'
-        -- here we only deal with the functions that DO resolve to Bool
-        where parseFunc name args'
-            | name == "==" = eqsFunc args'
-            | name == "basename" = basenameFunc args'
-getMatcher (EPar a x) = EPar a <$> getMatcher x
-getMatcher (Let _ _ _) = error "Let found in getMatcher"
+    in parseExpFunc fName =<< args'
+getMatcher (EPar a x) = getMatcher x
+getMatcher (ELet _ _ _) = error "Let found in getMatcher"
 
 resolve :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
 resolve exp =
-    let expE = deName [] exp
+    let expE = deNameExp [] exp
     in getMatcher =<< expE
 

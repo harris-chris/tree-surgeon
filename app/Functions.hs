@@ -37,11 +37,13 @@ basenameFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2
 parseLitFunc :: (Show a, Eq a) => String -> [Lit a] -> Either TSException (FData -> Lit a)
 parseLitFunc name args
     | name == "basename" = basenameFunc args
+    | True = Left $ NotAFunction name $ show <$> args
 
-eqsFunc :: (Show a, Eq a) => [Exp a] -> Either TSException (FData -> Bool)
+eqsFunc :: (Show a, Eq a) => [Lit a] -> Either TSException (FData -> Bool)
 eqsFunc (x:y:[]) = Right $ \_ -> x == y
 eqsFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2
 
-parseExpFunc :: (Show a, Eq a) => String -> [Exp a] -> Either TSException (FData -> Bool)
+parseExpFunc :: (Show a, Eq a) => String -> [Lit a] -> Either TSException (FData -> Bool)
 parseExpFunc name args
     | name == "==" = eqsFunc args
+    | True = Left $ NotAFunction name $ show <$> args

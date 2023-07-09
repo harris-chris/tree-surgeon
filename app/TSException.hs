@@ -14,6 +14,7 @@ data TSException =
     | FuncWrongNumArgs String Int Int
     | NotAFunction String [String]
     | UnrecognizedName [String] String
+    | Can'tResolveAsBool String
     deriving (Eq)
 
 instance Exception TSException
@@ -42,4 +43,7 @@ instance Show TSException where
         <> " is being applied to arguments "
         <> (intercalate " " args)
         <> " but is not a function"
+    show (Can'tResolveAsBool str) =
+        "Error: can't resolve <> " <> str
+        <> " to Bool"
 

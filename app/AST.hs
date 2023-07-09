@@ -5,10 +5,10 @@ module AST
     Exp(..)
     , Lit(..)
     , NamedExp(..)
-    , NamedLit(..)
     , VarName(..)
     , FData(..)
     , IsFilePath(..)
+    , getNameOnly
   ) where
 
 import Control.Exception
@@ -36,7 +36,6 @@ getNameOnly :: VarName a -> ByteString
 getNameOnly (VarName _ bs) = bs
 
 type NamedExp a = (VarName a, Exp a)
-type NamedLit a = (VarName a, Lit a)
 
 -- Everything here resolves to Bool
 data Exp a =
@@ -44,26 +43,25 @@ data Exp a =
     And a (Exp a) (Exp a)
     | Not a (Exp a)
     | Or a (Exp a) (Exp a)
-    -- Function, resolves to Bool
-    | LBool a Bool
+    -- Resolves to Bool
+    | ELit a (Lit a) -- later we will check that Lit a is an LBool
     | EFunc a (VarName a) [Lit a]
     -- Syntax
     | EPar a (Exp a)
     | ELet a [NamedExp a] (Exp a)
-    | EVar a (VarName a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
 -- Everything here resolves to a Literal, used as arguments to EFunc
 data Lit a =
     -- Literals
-    LList a [Lit a]
+    LBool a Bool
+    | LList a [Lit a]
     | LString a ByteString
     -- Function, resolves to Lit
     | LFunc a (VarName a) [Lit a]
     -- Syntax
     | LPar a (Lit a)
-    | LLet a [NamedLit a] (Lit a)
-    | LVar a (VarName a)
+    | LLet a [NamedExp a] (Lit a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
 data VarName a
