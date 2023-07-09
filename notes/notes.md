@@ -1,10 +1,43 @@
+
+*Dealing with Let*
+Let has to be part of Exp, not least because it may exist at the top level, eg `let x = True in x`
+But you could also have `let x = "myFile" in (basename file) == x`, where the variable itself is a lit.
+And you could have `let x = basename file in takePrefix x`, and here the `let` expression itself resolve to a `Lit`. So I think we need both kinds of Let.
+
+
+We probably need to treat `Bool` as an `EFunc`.
+We could make `Let` part of `Exp`, but have `deName :: Lit a ->...` which is called by `deName :: Exp a ->...`
+
+EFuncs:
+`==`
+`True`
+`False`
+
+LFuncs:
+`basename`
+
+When would we want an LFunc to resolve to Bool? It's possible but I think we can add it in later, LBool can co-exist with EBool.
+
+
+The `file` object itself can be thought of as having no `Eq` instance, and so should only ever be part of function arguments.
+
 Notes on where we currently are:
 - Read the stuff directly below, it's useful
 - We want the `Either TSException` bits to be during parsing the expression. By the time it comes to applying it, it should not be in an `Either`.
 
 `deName` just simplifies the `Exp` and has no relationship to the `file` object, so this can be run at any time. The tricky part is to have a bit of the process that goes from `Exp a` to `(FsObjData ->  Bool)`. This probably needs to be in the `deFunc` stage, where (non-Let-related) names are resolved.
 We possibly need a two-stage process:
-`deFuncA` goes `Exp a -> Either TSException (FData -> Exp a)` and resolves the functions that take `file` as an argument
+`deFuncA` goes `Exp a -> Either TSException (FData -> Exp a)` and resolves the functions that return literals. The key thing here is that the functions that don't return bools, like `basename`, have to be arguments to other functions that do take bools. So as an expression,
+`basename file` is no good, but
+`basename file == "myFile"` is good.
+- All functions that resolve to literals, rather than bools, should be arguments to other (resolving-to-bool) functions. Resolving these is the stage which requires FData to be injected.
+- Perhaps the AST itself should have two types - `Exp`, which resolves to Bool, and `Lit` for anything which is a literal or resolves to a literal.
+- `EString`, `EList` are clearly literals, they cannot say yes/no by themselves.
+- `EFunc` is the ambiguous one, since it will have both resolves-to-bool and resolves-to-list functions.
+  - We could assume that all Exp-level functions resolve to bool, and that all functions that are actually args to Exp-level functions resolve to literal (where literal could include the Bool type). This seems robust. The resolves-to-lit functions will take the `fData` argument, and then the Exp-level functions also need to take this in order to pass it through to their argument functions.
+- So either exp-level or argument-to-exp-level functions may return the Bool literal, and it is the Bool literal (not the actual Haskell Bool type) that an Exp resolves to.
+- I think this is the approach that we have to take, but at first glance we can't say at the type level that a matcher will resolve to `EBool` (versus any other Exp constructor), and so we can't say that the matcher will definitely resolve to a bool, which is really what we want.
+
 `deFuncB` deals with functions that don't relate to `file`, like `==`.
 or perhaps we have a single-stage process and just don't actually use the `file` argument in functions like `==`. Hard to resolve them otherwise, unless we replace them with new `Exp` constructors, like `Eqs`.
 

@@ -32,6 +32,8 @@ tokens :-
 <0> "["     			{ tok LBrack }
 <0> "]"     			{ tok RBrack }
 -- Literals
+<0> "False" 			{ tok LFalse }
+<0> "True" 			{ tok LTrue }
 <0> \"[^\"]*\" 			{ tokString }
 -- Syntax
 <0> "let"			{ tok Let }
@@ -97,6 +99,8 @@ data Token
   | Or
   -- Literals
   | String ByteString
+  | LFalse
+  | LTrue
   -- Parentheses
   | LPar
   | RPar

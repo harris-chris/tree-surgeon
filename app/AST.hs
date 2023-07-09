@@ -3,7 +3,9 @@
 module AST
   (
     Exp(..)
-    , NamedExpr(..)
+    , Lit(..)
+    , NamedExp(..)
+    , NamedLit(..)
     , VarName(..)
     , FData(..)
     , IsFilePath(..)
@@ -33,21 +35,35 @@ instance IsFilePath FData where
 getNameOnly :: VarName a -> ByteString
 getNameOnly (VarName _ bs) = bs
 
-type NamedExpr a = (VarName a, Exp a)
+type NamedExp a = (VarName a, Exp a)
+type NamedLit a = (VarName a, Lit a)
 
+-- Everything here resolves to Bool
 data Exp a =
     -- Logical operators
     And a (Exp a) (Exp a)
     | Not a (Exp a)
     | Or a (Exp a) (Exp a)
-    -- Function
+    -- Function, resolves to Bool
+    | LBool a Bool
     | EFunc a (VarName a) [Exp a]
-    -- Literals
-    | EList a [Exp a]
-    | EString a ByteString
     -- Syntax
     | EPar a (Exp a)
-    | Let a [NamedExpr a] (Exp a)
+    | ELet a [NamedExp a] (Exp a)
+    | EVar a (VarName a)
+    deriving (Foldable, Functor, Eq, Show, Traversable)
+
+-- Everything here resolves to a Literal, used as arguments to EFunc
+data Lit a =
+    -- Literals
+    LList a [Lit a]
+    | LString a ByteString
+    -- Function, resolves to Lit
+    | LFunc a (VarName a) [Lit a]
+    -- Syntax
+    | LPar a (Lit a)
+    | LLet a [NamedLit a] (Lit a)
+    | LVar a (VarName a)
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
 data VarName a

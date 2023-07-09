@@ -40,6 +40,18 @@ namesMatch' (x:xs) ys acc =
     ++ filter (\n -> (getNameOnly $ fst n) == (getNameOnly $ fst x)) ys
 namesMatch' [] ys acc = acc
 
+-- Resolve literal-related functions, including `basename` and others related to the
+-- `file` variable.
+resolveLit :: (Show a, Eq a) => Lit a -> Either TSException (FData -> Lit a)
+resolveLit x@(LBool _ _) = Right $ \_ -> x
+resolveLit (LList a xs) = EList a <$> mapM resolveLit xs
+resolveLit (LPar a x) = LPar a <$> (resolveLit x)
+resolveLit x@(LString _ _) = Right $ \_ -> x
+resolveLit (LFunc a v@(VarName _ nmStr) args) =
+    let args' = mapM resolveLit args
+    in parseLitFunc name <$> args'
+resolveLit x@(LVar _ _) = Right $ \_ -> x
+
 -- Resolve all the remaining functions; since we have run deName prior to this point,
 -- these functions should only be the built-in functions
 getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
@@ -51,24 +63,22 @@ getMatcher (And a x y) = And <$> (getMatcher x) <*> (getMatcher y)
 getMatcher (Not a x) =
     let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
     in invertMatcher <$> getMatcher x
-getMatcher fData (Or a x y) =
+getMatcher (Or a x y) =
     case ((getMatcher x), (getMatcher y)) of
         (Right fx, Right fy) -> Right $ \d -> fx d || fy d
         (Left err, _) -> Left err
         (_, Right err) -> Right err
 getMatcher (EFunc a (VarName _ fName) args)
-    let args' = mapM getMatcher args
+    let args' = mapM resolveLit args
     in parseFunc name <$> args'
+        -- here we only deal with the functions that DO resolve to Bool
         where parseFunc name args'
             | name == "==" = eqsFunc args'
             | name == "basename" = basenameFunc args'
--- All the literal types should already be part of function arguments
-getMatcher (EList a xs) = error "List is found outside a function"
-getMatcher (EString _ _) = error "Literal is found outside a function"
 getMatcher (EPar a x) = EPar a <$> getMatcher x
 getMatcher (Let _ _ _) = error "Let found in getMatcher"
 
-getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
+resolve :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
 resolve exp =
     let expE = deName [] exp
     in getMatcher =<< expE

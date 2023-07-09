@@ -29,6 +29,8 @@ import AST
   '['        			{ L.RangedToken L.LBrack _ }
   ']'        			{ L.RangedToken L.RBrack _ }
 -- Literals
+  False     			{ L.RangedToken L.LFalse _ }
+  True     			{ L.RangedToken L.LTrue _ }
   string     			{ L.RangedToken (L.String _) _ }
 -- Syntax
   let 				{ L.RangedToken L.Let _ }
@@ -46,42 +48,62 @@ import AST
 %left '|'
 %left '&'
 %left '!'
-%left ancestorNameIs
-%left ancestorNameStartsWith
-%left ancestorNameEndsWith
-%left ancestorNameContains
-%left nameIs
-%left nameStartsWith
-%left nameEndsWith
-%left nameContains
-%left all
-%left none
+%left True
+%left False
 
 %%
 
 exp :: { Exp L.Range }
+  -- Logical operators
   : exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
   | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
-  | name listParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
+  -- Function
+  | False 				{ LBool (L.rtRange $1) False }
+  | True 				{ LBool (L.rtRange $1) True }
+  | name listExpParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
+  -- Syntax
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | string        			{ unTok $1 (\rng (L.String s) -> EString rng $ unQuote s) }
-  | '[' listParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | let decParse(namedExpr) in exp 	{ Let (L.rtRange $1 <-> info $4) $2 $4 }
+  | let decExpParse(namedExp) in exp 	{ ELet (L.rtRange $1 <-> info $4) $2 $4 }
+  | name 			 	{ EVar (info $1) $1 }
+
+lit :: { Lit L.Range }
+  -- Literals
+  : '[' listLitParse(lit) ']'  		{ LList (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | string        			{ unTok $1 (\rng (L.String s) -> LString rng $ unQuote s) }
+  -- Function
+  | name listLitParse(lit) 		{ LFunc (info $1 <-> info (last $2)) $1 $2 }
+  -- Syntax
+  | '(' lit ')'				{ LPar (L.rtRange $1 <-> L.rtRange $3) $2 }
+  | let decLitParse(namedLit) in lit 	{ LLet (L.rtRange $1 <-> info $4) $2 $4 }
+  | name 			 	{ LVar (info $1) $1 }
 
 name :: { VarName L.Range }
   : identifier 				{ unTok $1 (\rng (L.Identifier n) -> VarName rng n) }
 
-listParse(typ) :: { [Exp L.Range] }
-  : listParse(typ) typ 		{ $2 : $1 }
+listExpParse(typ) :: { [Exp L.Range] }
+  : listExpParse(typ) typ 		{ $2 : $1 }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 
-namedExpr :: { NamedExpr L.Range }
+listLitParse(typ) :: { [Lit L.Range] }
+  : listLitParse(typ) typ 		{ $2 : $1 }
+  | typ 			{ [ $1 ] }
+  | 		       		{ [] }
+
+namedExp :: { NamedExp L.Range }
   : name '=' exp ';'  	{ ($1, $3) }
 
-decParse(typ) :: { [NamedExpr L.Range] }
-  : decParse(typ) typ 		{ $2 : $1 }
+namedLit :: { NamedLit L.Range }
+  : name '=' lit ';'  	{ ($1, $3) }
+
+decExpParse(typ) :: { [NamedExp L.Range] }
+  : decExpParse(typ) typ 	{ $2 : $1 }
+  | typ	 	        	{ [ $1 ] }
+  | 	       			{ [] }
+
+decLitParse(typ) :: { [NamedLit L.Range] }
+  : decLitParse(typ) typ 	{ $2 : $1 }
   | typ	 	        	{ [ $1 ] }
   | 	       			{ [] }
 
