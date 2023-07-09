@@ -61,7 +61,7 @@ exp :: { Exp L.Range }
   -- Function
   | False 				{ LBool (L.rtRange $1) False }
   | True 				{ LBool (L.rtRange $1) True }
-  | name listExpParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
+  | name listLitParse(lit) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
   -- Syntax
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decExpParse(namedExp) in exp 	{ ELet (L.rtRange $1 <-> info $4) $2 $4 }

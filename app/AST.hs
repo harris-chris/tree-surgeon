@@ -46,7 +46,7 @@ data Exp a =
     | Or a (Exp a) (Exp a)
     -- Function, resolves to Bool
     | LBool a Bool
-    | EFunc a (VarName a) [Exp a]
+    | EFunc a (VarName a) [Lit a]
     -- Syntax
     | EPar a (Exp a)
     | ELet a [NamedExp a] (Exp a)
