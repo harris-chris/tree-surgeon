@@ -1,4 +1,21 @@
+These problems again
+- Can we say that everything resolves to Lit if given `fData`? Probably we can
+So:
+- Make "Or", "And" functions, not language features
+- Still have a `simplifyExpr` function, which does `deName`, `dePar`.
+- Have a resolveToLit function, `FData -> Exp a -> Either RuntimeException (Lit a)`
+- Then at the final stage check that that lit is a bool
+
 I think we need a special place for functions that take `FData`. `FData` may need its own Parser object. The final type is `FData -> Either TSException Bool`
+
+So we have some preliminary functions for simplifying the expression, of the type
+`Exp a -> Either ExprException (Exp a)`
+such as
+`deName` but also `dePar`!!!
+These are mostly here not to speed things up but to catch grammar errors.
+
+Then we have a `resolve` function that is
+`resolve :: Exp a -> FData -> Either RuntimeException Bool`
 
 Can we totally re-think this?
 - There is only an `LFunc`, it only ever resolves to a `Lit`.

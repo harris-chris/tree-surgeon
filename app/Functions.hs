@@ -1,6 +1,6 @@
 module Functions
   (
-    parseFunc
+    resolveFunc
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
@@ -24,19 +24,17 @@ import TSException
 --     | RPar ResolvedExp
 --     deriving (Foldable, Functor, Eq, Show, Traversable)
 
-basenameFunc :: (Show a, Eq a) => [Lit a] -> Either TSException (FData -> Lit a)
-basenameFunc [(LString a str)] = case str of
-    "file" -> Right $ (\fData -> LString a $ BS.pack $ basename fData)
-    _ -> Left $ FuncArgs "basename" [(show $ LString a str)]
-basenameFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2
+basenameFunc :: (Show a, Eq a) => [Lit a] -> FData -> Either RuntimeException (Lit a)
+basenameFunc [(LFile a)] fData = Right $ LString a $ BS.pack $ basename fData
+basenameFunc args@(x:y:z) _ = Left $ FuncWrongNumArgs "basename" (length args) 1
 
-parseFunc :: (Show a, Eq a) => String -> [Lit a] -> Either TSException (FData -> Lit a)
-parseFunc name args
-    | name == "basename" = basenameFunc args
-    | name == "==" = eqsFunc args
-    | True = Left $ NotAFunction name $ show <$> args
+resolveFunc :: (Show a, Eq a) => FData -> String -> [Exp a] -> Either RuntimeException (Lit a)
+resolveFunc fData name args
+    | name == "basename" = basenameFunc args fData
+    | name == "==" = eqsFunc args fData
+    | True = Left $ FunctionNameNotRecognized name $ show <$> args
 
-eqsFunc :: (Show a, Eq a) => [Lit a] -> Either TSException (FData -> Bool)
-eqsFunc (x:y:[]) = Right $ \_ -> x == y
-eqsFunc args@(x:y:z) = Left $ FuncWrongNumArgs "basename" (length args) 2
+eqsFunc :: (Show a, Eq a) => [Lit a] -> FData -> Either RuntimeException (Lit a)
+eqsFunc ((LBool a x):(LBool _ y):[]) _ = Right $ LBool a $ x == y
+eqsFunc args@(x:y:z) _ = Left $ FuncWrongNumArgs "==" (length args) 2
 

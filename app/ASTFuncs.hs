@@ -9,9 +9,7 @@ import AST
 import Functions
 import TSException
 
-type Matcher = FData -> Either TSException Bool
-
-deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either TSException (Exp a)
+deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either ExpException (Exp a)
 deNameExp nDefs (And a x y) = And a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
 deNameExp nDefs (Not a x) = Not a <$> (deNameExp nDefs x)
 deNameExp nDefs (Or a x y) = Or a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
@@ -23,12 +21,12 @@ deNameExp nDefs (EFunc a v@(VarName _ nmStr) args) =
     let matches = filter (\n -> (getNameOnly $ fst n) == nmStr) nDefs
     in case matches of
         [] ->
-            EFunc a v args
+            Right $ EFunc a v args
         -- if the variable is a user-defined (potentially partially applied) function
         -- ie, let isOne = (== 1) in isOne (filesize file)
         [(_, EFunc a' v' args')] ->
             let combinedArgs = args' ++ args
-            in EFunc a v' combinedArgs
+            in Right $ EFunc a v' combinedArgs
         [x] ->
             Left $ NotAFunction (BS.unpack nmStr) (show <$> args)
 deNameExp nDefs (EPar a x) = EPar a <$> (deNameExp nDefs x)
@@ -49,30 +47,25 @@ namesMatchExp' [] ys acc = acc
 
 -- Resolve all the remaining functions; since we have run deName prior to this point,
 -- these functions should only be the built-in functions
-getMatcher :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
-getMatcher (And a x y) =
-    case ((getMatcher x), (getMatcher y)) of
-        (Right fx, Right fy) -> Right $ \d -> fx d && fy d
+resolve :: (Show a, Eq a) => FData -> Exp a -> Either RuntimeException Bool
+resolve fData (And a x y) =
+    case ((resolve fData x), (resolve fData y)) of
+        (Right fx, Right fy) -> Right $ fx && fy
         (Left err, _) -> Left err
-        (_, Right err) -> Left err
-getMatcher (Not a x) =
-    let invertMatcher = \matcher -> (\fn fsObj -> not $ matcher fn fsObj)
-    in invertMatcher <$> getMatcher x
-getMatcher (Or a x y) =
-    case ((getMatcher x), (getMatcher y)) of
-        (Right fx, Right fy) -> Right $ \d -> fx d || fy d
+        (_, Left err) -> Left err
+resolve fData (Not a x) =
+    let x' = resolve fData x
+    in not <$> x'
+resolve fData (Or a x y) =
+    case ((resolve fData x), (resolve fData y)) of
+        (Right fx, Right fy) -> Right $ fx || fy
         (Left err, _) -> Left err
-        (_, Right err) -> Left err
-getMatcher (ELit _ (LBool _ bl)) = Right $ \_ -> bl
-getMatcher (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
-getMatcher (EFunc a (VarName _ fName) args) =
-    let args' = mapM resolveLit args
-    in parseExpFunc fName =<< args'
-getMatcher (EPar a x) = getMatcher x
-getMatcher (ELet _ _ _) = error "Let found in getMatcher"
-
-resolve :: (Show a, Eq a) => Exp a -> Either TSException (FData -> Bool)
-resolve exp =
-    let expE = deNameExp [] exp
-    in getMatcher =<< expE
+        (_, Left err) -> Left err
+resolve _ (ELit _ (LBool _ bl)) = Right bl
+resolve _ (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
+resolve fData (EFunc a (VarName _ fName) args) =
+    let funcResolved = resolveFunc fData (BS.unpack fName) args
+    in resolve <$> funcResolved fData
+resolve fData (EPar a x) = resolve fData x
+resolve _ (ELet _ _ _) = error "Let found in resolve"
 
