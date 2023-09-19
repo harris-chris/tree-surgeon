@@ -32,6 +32,7 @@ tokens :-
 <0> "["     			{ tok LBrack }
 <0> "]"     			{ tok RBrack }
 -- Literals
+<0> "file" 			{ tok LFile }
 <0> "False" 			{ tok LFalse }
 <0> "True" 			{ tok LTrue }
 <0> \"[^\"]*\" 			{ tokString }
@@ -99,6 +100,7 @@ data Token
   | Or
   -- Literals
   | String ByteString
+  | LFile
   | LFalse
   | LTrue
   -- Parentheses

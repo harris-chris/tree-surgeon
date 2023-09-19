@@ -1,3 +1,5 @@
+I think we need a special place for functions that take `FData`. `FData` may need its own Parser object. The final type is `FData -> Either TSException Bool`
+
 Can we totally re-think this?
 - There is only an `LFunc`, it only ever resolves to a `Lit`.
 - At the end we assess to see if `ELit` is a bool.

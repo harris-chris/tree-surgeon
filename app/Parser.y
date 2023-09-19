@@ -60,7 +60,9 @@ exp :: { Exp L.Range }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
   -- Function
   | lit  				{ ELit (info $1) $1 }
-  | name listLitParse(lit) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
+  | name listExpParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
+  -- List
+  | '[' listExpParse(exp) ']'  		{ EList (L.rtRange $1 <-> L.rtRange $3) $2 }
   -- Syntax
   | '(' exp ')'				{ EPar (L.rtRange $1 <-> L.rtRange $3) $2 }
   | let decExpParse(namedExp) in exp 	{ ELet (L.rtRange $1 <-> info $4) $2 $4 }
@@ -68,13 +70,12 @@ exp :: { Exp L.Range }
 lit :: { Lit L.Range }
   -- Literals
   : bool       				{ $1 }
-  | '[' listLitParse(lit) ']'  		{ LList (L.rtRange $1 <-> L.rtRange $3) $2 }
   | string        			{ unTok $1 (\rng (L.String s) -> LString rng $ unQuote s) }
-  -- Function
-  | name listLitParse(lit) 		{ LFunc (info $1 <-> info (last $2)) $1 $2 }
+  | file                                { $1 }
   -- Syntax
-  | '(' lit ')'				{ LPar (L.rtRange $1 <-> L.rtRange $3) $2 }
-  | let decExpParse(namedExp) in lit 	{ LLet (L.rtRange $1 <-> info $4) $2 $4 }
+
+file :: { Lit L.Range }
+  : file                                { LFile (info $1) }
 
 bool :: { Lit L.Range  }
   : False 				{ LBool (L.rtRange $1) False }
@@ -85,11 +86,6 @@ name :: { VarName L.Range }
 
 listExpParse(typ) :: { [Exp L.Range] }
   : listExpParse(typ) typ 		{ $2 : $1 }
-  | typ 			{ [ $1 ] }
-  | 		       		{ [] }
-
-listLitParse(typ) :: { [Lit L.Range] }
-  : listLitParse(typ) typ 		{ $2 : $1 }
   | typ 			{ [ $1 ] }
   | 		       		{ [] }
 

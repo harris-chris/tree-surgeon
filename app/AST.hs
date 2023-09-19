@@ -45,7 +45,9 @@ data Exp a =
     | Or a (Exp a) (Exp a)
     -- Resolves to Bool
     | ELit a (Lit a) -- later we will check that Lit a is an LBool
-    | EFunc a (VarName a) [Lit a]
+    | EFunc a (VarName a) [Exp a]
+    -- List
+    | EList a [Exp a]
     -- Syntax
     | EPar a (Exp a)
     | ELet a [NamedExp a] (Exp a)
@@ -55,13 +57,8 @@ data Exp a =
 data Lit a =
     -- Literals
     LBool a Bool
-    | LList a [Lit a]
     | LString a ByteString
-    -- Function, resolves to Lit
-    | LFunc a (VarName a) [Lit a]
-    -- Syntax
-    | LPar a (Lit a)
-    | LLet a [NamedExp a] (Lit a)
+    | LFile a
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
 data VarName a
