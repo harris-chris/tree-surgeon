@@ -19,6 +19,7 @@ deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either TSException (Exp 
 deNameExp nDefs (And a x y) = And a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
 deNameExp nDefs (Not a x) = Not a <$> (deNameExp nDefs x)
 deNameExp nDefs (Or a x y) = Or a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
+deNameExp nDefs (Eqs a x y) = Eqs a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
 deNameExp _ x@(ELit _ _) = Right x
 -- let matchesFunc = (==) in matchesFunc (basename file) "myFile"
 -- let matchesBool = (==) (basename file) "myFile" in matchesBool

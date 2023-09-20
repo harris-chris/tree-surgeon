@@ -107,7 +107,7 @@ main = hspec $ do
         it "basename file == \"string\"" $ do
             let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
             let expected = Dir "test-data" [ treeA' ]
-            let testStr = "basename file == \"file_a_2.hpp\""
+            let testStr = "(basename file) == \"file_a_2.hpp\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
     --     it "ancestorNameIs string" $ do
     --         let expected = Dir "test-data" [ treeA ]
