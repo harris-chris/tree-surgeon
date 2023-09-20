@@ -9,7 +9,7 @@ import AST
 import Functions
 import TSException
 
-deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either ExpException (Exp a)
+deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either TSException (Exp a)
 deNameExp nDefs (And a x y) = And a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
 deNameExp nDefs (Not a x) = Not a <$> (deNameExp nDefs x)
 deNameExp nDefs (Or a x y) = Or a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
@@ -47,7 +47,7 @@ namesMatchExp' [] ys acc = acc
 
 -- Resolve all the remaining functions; since we have run deName prior to this point,
 -- these functions should only be the built-in functions
-resolve :: (Show a, Eq a) => FData -> Exp a -> Either RuntimeException (Lit a)
+resolve :: (Show a, Eq a) => FData -> Exp a -> Either TSException (Lit a)
 resolve fData (And a x y) =
     case ((resolve fData x), (resolve fData y)) of
         (Right (LBool a x'), Right (LBool b y')) -> Right $ LBool a (x' && y')
@@ -75,4 +75,15 @@ resolve fData (EFunc a (VarName _ fName) args) =
     in resolveFunc fData (BS.unpack fName) =<< args'
 resolve fData (EPar a x) = resolve fData x
 resolve _ (ELet _ _ _) = error "Let found in resolve"
+
+getMatcher :: (Show a, Eq a) => Exp a -> FData -> Either TSException Bool
+getMatcher exp fData = do
+    deNamed <- deNameExp [] exp
+    resolved <- resolve fData deNamed
+    asBool <- convertToBool resolved
+    return asBool
+
+convertToBool :: (Show a) => Lit a -> Either TSException Bool
+convertToBool (LBool _ bl) = Right $ bl
+convertToBool lit = Left $ Can'tResolveAsBool (show lit)
 

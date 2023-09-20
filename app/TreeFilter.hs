@@ -57,7 +57,7 @@ getExcluded ancestors origTree filteredTree =
         arrayFiltered = toBashArray ancestors filteredTree
     in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
-filterTreeFilesWith :: Matcher -> DirTree FData -> Bool
+filterTreeFilesWith :: (FData -> Either TSException Bool) -> DirTree FData -> Bool
 filterTreeFilesWith f (File name objData) = f objData
 filterTreeFilesWith _ _ = True
 

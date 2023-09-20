@@ -1,24 +1,31 @@
 module TSException
   (
-    ExpException(..)
-    , RuntimeException(..)
+    TSException(..)
   ) where
 
 import Control.Exception
 import Data.List (intercalate)
 
-data ExpException =
-    Couldn'tLex String
+data TSException =
+    Can'tApplyLogicalToNonBool String
+    | Can'tResolveAsBool String
+    | Couldn'tLex String
     | Couldn'tParse String
     | DuplicateName String String
-    | FuncArgs String [String]
+    | FuncNameNotRecognized String [String]
+    | FuncWrongNumArgs String Int Int
     | NotAFunction String [String]
     | UnrecognizedName [String] String
     deriving (Eq)
 
-instance Exception ExpException
+instance Exception TSException
 
-instance Show ExpException where
+instance Show TSException where
+    show (Can'tApplyLogicalToNonBool str) =
+        "Error: can't invert non-boolean <> " <> str
+    show (Can'tResolveAsBool str) =
+        "Error: can't resolve <> " <> str
+        <> " to Bool"
     show (Couldn'tLex expStr) =
         "Error in expression:\n" <> expStr
     show (Couldn'tParse expStr) =
@@ -27,6 +34,16 @@ instance Show ExpException where
         "Error: name " <> name
         <> " in declaration " <> dec
         <> " already exists"
+    show (FuncNameNotRecognized name args) =
+        "Error: name " <> name
+        <> " with arguments "
+        <> (intercalate " " args)
+        <> " is not a recognized function"
+    show (FuncWrongNumArgs funcName actualNum expectedNum) =
+        "Error:\n" <>
+        "Function " <> funcName <>
+        " expects " <> show expectedNum <>
+        " arguments, but has been called with " <> show actualNum
     show (NotAFunction name args) =
         "Error: name " <> name
         <> " is being applied to arguments "
@@ -38,28 +55,3 @@ instance Show ExpException where
         <> (intercalate ", " varsInScope)
         <> "] in scope"
 
-data RuntimeException =
-    Can'tResolveAsBool String
-    | Can'tApplyLogicalToNonBool String
-    | FuncWrongNumArgs String Int Int
-    | FunctionNameNotRecognized String [String]
-    deriving (Eq)
-
-instance Exception RuntimeException
-
-instance Show RuntimeException where
-    show (Can'tResolveAsBool str) =
-        "Error: can't resolve <> " <> str
-        <> " to Bool"
-    show (Can'tApplyLogicalToNonBool str) =
-        "Error: can't invert non-boolean <> " <> str
-    show (FuncWrongNumArgs funcName actualNum expectedNum) =
-        "Error:\n" <>
-        "Function " <> funcName <>
-        " expects " <> show expectedNum <>
-        " arguments, but has been called with " <> show actualNum
-    show (FunctionNameNotRecognized name args) =
-        "Error: name " <> name
-        <> " with arguments "
-        <> (intercalate " " args)
-        <> " is not a recognized function"
