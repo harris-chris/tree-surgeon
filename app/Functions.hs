@@ -28,7 +28,7 @@ basenameFunc :: (Show a, Eq a) => [Lit a] -> FData -> Either RuntimeException (L
 basenameFunc [(LFile a)] fData = Right $ LString a $ BS.pack $ basename fData
 basenameFunc args@(x:y:z) _ = Left $ FuncWrongNumArgs "basename" (length args) 1
 
-resolveFunc :: (Show a, Eq a) => FData -> String -> [Exp a] -> Either RuntimeException (Lit a)
+resolveFunc :: (Show a, Eq a) => FData -> String -> [Lit a] -> Either RuntimeException (Lit a)
 resolveFunc fData name args
     | name == "basename" = basenameFunc args fData
     | name == "==" = eqsFunc args fData

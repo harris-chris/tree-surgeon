@@ -40,6 +40,7 @@ instance Show ExpException where
 
 data RuntimeException =
     Can'tResolveAsBool String
+    | Can'tApplyLogicalToNonBool String
     | FuncWrongNumArgs String Int Int
     | FunctionNameNotRecognized String [String]
     deriving (Eq)
@@ -50,6 +51,8 @@ instance Show RuntimeException where
     show (Can'tResolveAsBool str) =
         "Error: can't resolve <> " <> str
         <> " to Bool"
+    show (Can'tApplyLogicalToNonBool str) =
+        "Error: can't invert non-boolean <> " <> str
     show (FuncWrongNumArgs funcName actualNum expectedNum) =
         "Error:\n" <>
         "Function " <> funcName <>

@@ -1,3 +1,6 @@
+All function arguments should resolve to Lits (everything should resolve to a Lit).
+Probably easiest done recursive rather than in stages. So `EFunc [Exp a]`, but within the resolveFunc function, turns `Exp a` to `Lit`.
+
 These problems again
 - Can we say that everything resolves to Lit if given `fData`? Probably we can
 So:

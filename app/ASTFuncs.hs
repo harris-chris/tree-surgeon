@@ -47,25 +47,32 @@ namesMatchExp' [] ys acc = acc
 
 -- Resolve all the remaining functions; since we have run deName prior to this point,
 -- these functions should only be the built-in functions
-resolve :: (Show a, Eq a) => FData -> Exp a -> Either RuntimeException Bool
+resolve :: (Show a, Eq a) => FData -> Exp a -> Either RuntimeException (Lit a)
 resolve fData (And a x y) =
     case ((resolve fData x), (resolve fData y)) of
-        (Right fx, Right fy) -> Right $ fx && fy
+        (Right (LBool a x'), Right (LBool b y')) -> Right $ LBool a (x' && y')
+        (Right x', Right (LBool _ _)) -> Left $ Can'tApplyLogicalToNonBool (show x')
+        (Right (LBool _ _), y') -> Left $ Can'tApplyLogicalToNonBool (show y')
         (Left err, _) -> Left err
         (_, Left err) -> Left err
 resolve fData (Not a x) =
     let x' = resolve fData x
-    in not <$> x'
+    in case x' of
+        (Right (LBool y bl)) -> Right $ LBool y (not bl)
+        (Right y) -> Left $ Can'tApplyLogicalToNonBool $ show y
+        (Left err) -> Left err
 resolve fData (Or a x y) =
     case ((resolve fData x), (resolve fData y)) of
-        (Right fx, Right fy) -> Right $ fx || fy
+        (Right (LBool a x'), Right (LBool b y')) -> Right $ LBool a (x' || y')
+        (Right x', Right (LBool _ _)) -> Left $ Can'tApplyLogicalToNonBool (show x')
+        (Right (LBool _ _), y') -> Left $ Can'tApplyLogicalToNonBool (show y')
         (Left err, _) -> Left err
         (_, Left err) -> Left err
-resolve _ (ELit _ (LBool _ bl)) = Right bl
+resolve _ (ELit _ bl@(LBool _ _)) = Right bl
 resolve _ (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
 resolve fData (EFunc a (VarName _ fName) args) =
-    let funcResolved = resolveFunc fData (BS.unpack fName) args
-    in resolve <$> funcResolved fData
+    let args' = mapM (resolve fData) args
+    in resolveFunc fData (BS.unpack fName) =<< args'
 resolve fData (EPar a x) = resolve fData x
 resolve _ (ELet _ _ _) = error "Let found in resolve"
 
