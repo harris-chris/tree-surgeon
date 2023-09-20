@@ -2,6 +2,7 @@ module ASTFuncs
   (
     deNameExp
     , getMatcher
+    , resolve
     , simplifyExp
     , Matcher
   ) where
@@ -81,8 +82,7 @@ resolve fData (Eqs a x y) =
         (Right x', Right y') -> Left $ Can'tCompare (show x') (show y')
         (Left err, _) -> Left err
         (_, Left err) -> Left err
-resolve _ (ELit _ bl@(LBool _ _)) = Right bl
-resolve _ (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
+resolve _ (ELit _ lit) = Right lit
 resolve fData (EFunc a (VarName _ fName) args) =
     let args' = mapM (resolve fData) args
     in resolveFunc fData (BS.unpack fName) =<< args'
