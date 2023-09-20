@@ -43,6 +43,8 @@ data Exp a =
     And a (Exp a) (Exp a)
     | Not a (Exp a)
     | Or a (Exp a) (Exp a)
+    -- Equals
+    | Eqs a (Exp a) (Exp a)
     -- Resolves to Bool
     | ELit a (Lit a) -- later we will check that Lit a is an LBool
     | EFunc a (VarName a) [Exp a]

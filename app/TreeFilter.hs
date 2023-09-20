@@ -5,6 +5,7 @@ module TreeFilter
     , filterDir
     , filterTreeWith
     , getExcluded
+    , parseFilterStr
     , toElements
     , TSException(..)
   ) where
@@ -85,18 +86,27 @@ filterTreeWith tree filterStr =
         tree' = toElements tree
     in case simplifiedExp of
         Left err -> Left [err]
-        Right simplified -> filterTreeWith' (getMatcher simplified) tree'
+        Right simplified ->
+            let filtered = filterTreeWith' True (getMatcher simplified) tree'
+            in fromJust <$> filtered
 
-filterTreeWith' :: Matcher -> DirTree FData -> Either [TSException] (DirTree FData)
-filterTreeWith' f (Dir name contents) =
-    let filtered = filterTreeWith' f <$> contents :: [Either [TSException] (DirTree FData)]
-        -- results = sequence filtered -- :: Either [TSException] (DirTree FData)
-        (exceptions, filteredResults) = partitionEithers filtered
+filterTreeWith' :: Bool -> Matcher -> DirTree FData -> Either [TSException] (Maybe (DirTree FData))
+filterTreeWith' isBase f (Dir name contents) =
+    let contents' = filterTreeWith' False f <$> contents :: [Either [TSException] (Maybe (DirTree FData))]
+        (exceptions, contents'') = partitionEithers contents'
+        contents''' = catMaybes contents''
     in if null exceptions
-        then Right (Dir name filteredResults)
+        then Right (Just $ Dir name contents''')
         else Left $ concat exceptions
-filterTreeWith' _ (File name _) = Left [CanOnlyFilterDirectory name]
-filterTreeWith' _ (Failed name _) = Left [CanOnlyFilterDirectory name]
+filterTreeWith' True _ (File name _) = Left [CanOnlyFilterDirectory name]
+filterTreeWith' False f file@(File name fData) =
+    case f fData of
+        Left err -> Left [err]
+        Right result ->
+            if result
+                then Right $ Just file
+                else Right Nothing
+filterTreeWith' _ _ (Failed name _) = Left [CanOnlyFilterDirectory name]
 
 parseFilterStr :: ByteString -> Either TSException (Exp L.Range)
 parseFilterStr filterStr =

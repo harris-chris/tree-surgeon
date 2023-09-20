@@ -25,10 +25,13 @@ import AST
   '&'				{ L.RangedToken L.And _ }
   '!'				{ L.RangedToken L.Not _ }
   '|'        			{ L.RangedToken L.Or _ }
+-- Equals
+  '=='                          { L.RangedToken L.Eqs _ }
 -- List
   '['        			{ L.RangedToken L.LBrack _ }
   ']'        			{ L.RangedToken L.RBrack _ }
 -- Literals
+  file                          { L.RangedToken L.LFile _ }
   False     			{ L.RangedToken L.LFalse _ }
   True     			{ L.RangedToken L.LTrue _ }
   string     			{ L.RangedToken (L.String _) _ }
@@ -58,6 +61,8 @@ exp :: { Exp L.Range }
   : exp '&' exp 			{ And (info $1 <-> info $3) $1 $3 }
   | '!' exp 				{ Not (L.rtRange $1 <-> info $2) $2 }
   | exp '|' exp 			{ Or (info $1 <-> info $3) $1 $3 }
+  -- Equals
+  | exp '==' exp                        { Eqs (info $1 <-> info $3) $1 $3 }
   -- Function
   | lit  				{ ELit (info $1) $1 }
   | name listExpParse(exp) 		{ EFunc (info $1 <-> info (last $2)) $1 $2 }
@@ -71,11 +76,8 @@ lit :: { Lit L.Range }
   -- Literals
   : bool       				{ $1 }
   | string        			{ unTok $1 (\rng (L.String s) -> LString rng $ unQuote s) }
-  | file                                { $1 }
+  | file                                { LFile (L.rtRange $1) }
   -- Syntax
-
-file :: { Lit L.Range }
-  : file                                { LFile (info $1) }
 
 bool :: { Lit L.Range  }
   : False 				{ LBool (L.rtRange $1) False }

@@ -28,6 +28,8 @@ tokens :-
 <0> "&"				{ tok And }
 <0> "!"				{ tok Not }
 <0> "|"				{ tok Or }
+-- Equals
+<0> "=="			{ tok Eqs }
 -- List
 <0> "["     			{ tok LBrack }
 <0> "]"     			{ tok RBrack }
@@ -98,6 +100,8 @@ data Token
   | And
   | Not
   | Or
+  -- Equals
+  | Eqs
   -- Literals
   | String ByteString
   | LFile

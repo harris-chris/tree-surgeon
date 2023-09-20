@@ -1,3 +1,10 @@
+2023-09-20
+----------
+The next challenge is to get filterTreeWith' working in a monadic way.
+Make sure the initial directory doesn't filter itself away.
+A directory with included contents cannot be filtered away(?)
+
+
 All function arguments should resolve to Lits (everything should resolve to a Lit).
 Probably easiest done recursive rather than in stages. So `EFunc [Exp a]`, but within the resolveFunc function, turns `Exp a` to `Lit`.
 

@@ -8,6 +8,7 @@ import Data.List (intercalate)
 
 data TSException =
     Can'tApplyLogicalToNonBool String
+    | Can'tCompare String String
     | Can'tResolveAsBool String
     | CanOnlyFilterDirectory String
     | Couldn'tLex String
@@ -24,6 +25,9 @@ instance Exception TSException
 instance Show TSException where
     show (Can'tApplyLogicalToNonBool str) =
         "Error: can't invert non-boolean <> " <> str
+    show (Can'tCompare strA strB) =
+        "Error: can't compare <> " <> strA
+        <> " with " <> strB
     show (Can'tResolveAsBool str) =
         "Error: can't resolve <> " <> str
         <> " to Bool"

@@ -1,7 +1,8 @@
 module Main where
 
 import Options.Applicative
-import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import System.Directory.Tree
 import System.IO
 
@@ -19,34 +20,34 @@ main = tsFilter =<< execParser opts
      <> progDesc "Filter the directory TARGET using the filter FILTER"
      <> header "Tree surgeon: A utility for filtering and manipulating file trees" )
 
-applyFuncWithFile :: FilePath -> (BS.ByteString -> IO ()) -> IO()
+applyFuncWithFile :: FilePath -> (LBS.ByteString -> IO ()) -> IO()
 applyFuncWithFile filePath filterFunc =
     withFile filePath ReadMode handleF
-        where handleF handle = filterFunc =<< (BS.hGetContents handle)
+        where handleF handle = filterFunc =<< (LBS.hGetContents handle)
 
 tsFilter :: CliOptions -> IO ()
 tsFilter (ShowFilteredTree fltr source) =
     let applyFilterF = putStrLn . showTree
         f = applyFilterWith source applyFilterF
     in case fltr of
-        Left str -> f (BS.pack str)
+        Left str -> f (LBS.pack str)
         Right file -> applyFuncWithFile file f
 tsFilter (ShowDiffTree fltr source) =
     let applyFilterF = \x y -> putStrLn $ showTreeComparison x y
         f = applyFilterWithComparative source applyFilterF
     in case fltr of
-        Left str -> f (BS.pack str)
+        Left str -> f (LBS.pack str)
         Right file -> applyFuncWithFile file f
 tsFilter (ToBashArray fltr source False ancestors) =
     let applyFilterF = putStrLn . unwords . (toBashArray ancestors)
         f = applyFilterWith source applyFilterF
     in case fltr of
-        Left str -> f (BS.pack str)
+        Left str -> f (LBS.pack str)
         Right file -> applyFuncWithFile file f
 tsFilter (ToBashArray fltr source True ancestors) =
     let applyFilterF = \x y -> putStrLn . unwords $ getExcluded ancestors x y
         f = applyFilterWithComparative source applyFilterF
     in case fltr of
-        Left str -> f (BS.pack str)
+        Left str -> f (LBS.pack str)
         Right file -> applyFuncWithFile file f
 

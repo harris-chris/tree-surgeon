@@ -73,6 +73,14 @@ resolve fData (Or a x y) =
         (Right (LBool _ _), y') -> Left $ Can'tApplyLogicalToNonBool (show y')
         (Left err, _) -> Left err
         (_, Left err) -> Left err
+resolve fData (Eqs a x y) =
+    case ((resolve fData x), (resolve fData y)) of
+        (Right (LBool a x'), Right (LBool b y')) -> Right $ LBool a (x' == y')
+        (Right (LString a x'), Right (LString b y')) -> Right $ LBool a (x' == y')
+        (Right (LFile a), Right (LFile b)) -> Right $ LBool a True
+        (Right x', Right y') -> Left $ Can'tCompare (show x') (show y')
+        (Left err, _) -> Left err
+        (_, Left err) -> Left err
 resolve _ (ELit _ bl@(LBool _ _)) = Right bl
 resolve _ (ELit _ lit) = Left $ Can'tResolveAsBool $ show lit
 resolve fData (EFunc a (VarName _ fName) args) =
