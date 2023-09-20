@@ -49,7 +49,7 @@ applyFilterWithComparative dirname ioF filterStr =
         anchoredTree <- readDirectoryWith return dirname
         let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
         case filteredTreeE of
-            Left err -> throw $ err
+            Left (e:es) -> throw $ e
             Right filtered -> ioF (toElements $ dirTree anchoredTree) filtered
 
 getExcluded :: Bool -> DirTree FData -> DirTree FData -> [String]
@@ -88,13 +88,13 @@ filterTreeWith tree filterStr =
         Right simplified -> filterTreeWith' (getMatcher simplified) tree'
 
 filterTreeWith' :: Matcher -> DirTree FData -> Either [TSException] (DirTree FData)
-filterTreeWith' f (Dir name contents) = do
-    let filteredContents = map (filterTreeWith' f) contents
-    results <- sequence filteredContents
-    let (exceptions, filteredResults) = partitionEithers results
-    if null exceptions
+filterTreeWith' f (Dir name contents) =
+    let filtered = filterTreeWith' f <$> contents :: [Either [TSException] (DirTree FData)]
+        -- results = sequence filtered -- :: Either [TSException] (DirTree FData)
+        (exceptions, filteredResults) = partitionEithers filtered
+    in if null exceptions
         then Right (Dir name filteredResults)
-        else Left exceptions
+        else Left $ concat exceptions
 filterTreeWith' _ (File name _) = Left [CanOnlyFilterDirectory name]
 filterTreeWith' _ (Failed name _) = Left [CanOnlyFilterDirectory name]
 
