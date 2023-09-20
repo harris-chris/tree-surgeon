@@ -9,6 +9,7 @@ import Data.List (intercalate)
 data TSException =
     Can'tApplyLogicalToNonBool String
     | Can'tResolveAsBool String
+    | CanOnlyFilterDirectory String
     | Couldn'tLex String
     | Couldn'tParse String
     | DuplicateName String String
@@ -26,6 +27,9 @@ instance Show TSException where
     show (Can'tResolveAsBool str) =
         "Error: can't resolve <> " <> str
         <> " to Bool"
+    show (CanOnlyFilterDirectory str) =
+        "Error: " <> str
+        <> " is a file, but I can only filter directories"
     show (Couldn'tLex expStr) =
         "Error in expression:\n" <> expStr
     show (Couldn'tParse expStr) =

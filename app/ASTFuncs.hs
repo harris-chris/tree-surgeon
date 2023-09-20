@@ -1,6 +1,9 @@
 module ASTFuncs
   (
-    getMatcher
+    deNameExp
+    , getMatcher
+    , simplifyExp
+    , Matcher
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
@@ -8,6 +11,8 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 import AST
 import Functions
 import TSException
+
+type Matcher = FData -> Either TSException Bool
 
 deNameExp :: (Show a, Eq a) => [NamedExp a] -> Exp a -> Either TSException (Exp a)
 deNameExp nDefs (And a x y) = And a <$> (deNameExp nDefs x) <*> (deNameExp nDefs y)
@@ -76,10 +81,14 @@ resolve fData (EFunc a (VarName _ fName) args) =
 resolve fData (EPar a x) = resolve fData x
 resolve _ (ELet _ _ _) = error "Let found in resolve"
 
+simplifyExp :: (Show a, Eq a) => Exp a -> Either TSException (Exp a)
+simplifyExp exp = do
+    deNamed <- deNameExp [] exp
+    return deNamed
+
 getMatcher :: (Show a, Eq a) => Exp a -> FData -> Either TSException Bool
 getMatcher exp fData = do
-    deNamed <- deNameExp [] exp
-    resolved <- resolve fData deNamed
+    resolved <- resolve fData exp
     asBool <- convertToBool resolved
     return asBool
 

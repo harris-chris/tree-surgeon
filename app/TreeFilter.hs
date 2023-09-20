@@ -11,6 +11,7 @@ module TreeFilter
 
 import Control.Exception
 import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack)
+import Data.Either (partitionEithers)
 import Data.Maybe
 import Debug.Trace
 import System.FilePath
@@ -39,7 +40,7 @@ applyFilterWith dirname ioF filterStr  =
         anchoredTree <- readDirectoryWith return dirname
         let filteredTreeE = filterTreeWith (dirTree anchoredTree) filterStr
         case filteredTreeE of
-            Left err -> throw $ err
+            Left (e:es) -> throw $ e
             Right filtered -> ioF filtered
 
 applyFilterWithComparative :: FileName -> (DirTree FData -> DirTree FData -> IO()) -> ByteString -> IO ()
@@ -57,9 +58,9 @@ getExcluded ancestors origTree filteredTree =
         arrayFiltered = toBashArray ancestors filteredTree
     in filter (\z -> not $ elem z arrayFiltered) arrayOrig
 
-filterTreeFilesWith :: (FData -> Either TSException Bool) -> DirTree FData -> Bool
-filterTreeFilesWith f (File name objData) = f objData
-filterTreeFilesWith _ _ = True
+-- filterTreeFilesWith :: (FData -> Either TSException Bool) -> DirTree FData -> Bool
+-- filterTreeFilesWith f (File name objData) = f objData
+-- filterTreeFilesWith _ _ = True
 
 filterTreeDirs' :: DirTree FData -> Maybe (DirTree FData)
 filterTreeDirs' f@(File _ _) = Just f
@@ -77,20 +78,30 @@ filterTreeDirs (Dir name []) = False
 filterTreeDirs (Dir _ (c:cx)) = True
 filterTreeDirs (Failed _ _) = True
 
-filterTreeWith :: DirTree a -> ByteString -> Either TSException (DirTree FData)
+filterTreeWith :: DirTree a -> ByteString -> Either [TSException] (DirTree FData)
 filterTreeWith tree filterStr =
-    let expE = L.runAlex filterStr parseTreeSurgeon
-        expE' = (case expE of
-            Left errStr -> Left $ Couldn'tLex errStr
-            Right exprString -> Right exprString) :: Either TSException (Exp L.Range)
-        expE'' = resolve =<< expE'
-        matcherE = getMatcher =<< expE''
-    in matcherE >>= filterTreeWith' (toElements tree)
+    let exp = parseFilterStr filterStr
+        simplifiedExp = simplifyExp =<< exp
+        tree' = toElements tree
+    in case simplifiedExp of
+        Left err -> Left [err]
+        Right simplified -> filterTreeWith' (getMatcher simplified) tree'
 
-filterTreeWith' :: DirTree FData -> Matcher -> Either TSException (DirTree FData)
-filterTreeWith' tree@(Dir name _) fileMatcher =
-    let filesFiltered = filterDir (filterTreeFilesWith fileMatcher) tree
-        filteredContents = filterTreeDirs' <$> (contents filesFiltered)
-    in Right $ Dir name (catMaybes filteredContents)
-filterTreeWith' (File name _) _ = Left $ CanOnlyFilterDirectory name
-filterTreeWith' (Failed name _) _ = Left $ CanOnlyFilterDirectory name
+filterTreeWith' :: Matcher -> DirTree FData -> Either [TSException] (DirTree FData)
+filterTreeWith' f (Dir name contents) = do
+    let filteredContents = map (filterTreeWith' f) contents
+    results <- sequence filteredContents
+    let (exceptions, filteredResults) = partitionEithers results
+    if null exceptions
+        then Right (Dir name filteredResults)
+        else Left exceptions
+filterTreeWith' _ (File name _) = Left [CanOnlyFilterDirectory name]
+filterTreeWith' _ (Failed name _) = Left [CanOnlyFilterDirectory name]
+
+parseFilterStr :: ByteString -> Either TSException (Exp L.Range)
+parseFilterStr filterStr =
+    let parsed = L.runAlex filterStr parseTreeSurgeon
+    in case parsed of
+        Left errStr -> Left $ Couldn'tLex errStr
+        Right exprString -> Right exprString
+
