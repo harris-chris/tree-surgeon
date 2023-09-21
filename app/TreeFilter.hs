@@ -87,25 +87,35 @@ filterTreeWith tree filterStr =
     in case simplifiedExp of
         Left err -> Left [err]
         Right simplified ->
-            let filtered = filterTreeWith' True (getMatcher simplified) tree'
+            let filtered = filterTreeWith' [] (getMatcher simplified) tree'
             in fromJust <$> filtered
 
-filterTreeWith' :: Bool -> Matcher -> DirTree FData -> Either [TSException] (Maybe (DirTree FData))
-filterTreeWith' isBase f (Dir name contents) =
-    let contents' = filterTreeWith' False f <$> contents :: [Either [TSException] (Maybe (DirTree FData))]
+
+filterTreeWith' ::
+    [ByteString] -> Matcher -> DirTree FData -> Either [TSException] (Maybe (DirTree FData))
+filterTreeWith' parents f (Dir name contents) =
+    let fData = FileData name parents
+        includeMeE = f fData
+        parents' = parents ++ [(pack name)]
+        contents' = filterTreeWith' parents' f <$> contents
         (exceptions, contents'') = partitionEithers contents'
         contents''' = catMaybes contents''
-        -- We have a situation here: Dir has no `FData` so can't match on that
-        -- Perhaps construct an FData here?
-        -- includeMe = f contents
-    in if null exceptions
-        then if length contents''' == 0
-                 -- if a folder has no contents, we get rid of it by default
-                 then Right Nothing
-                 else Right (Just $ Dir name contents''')
-        else Left $ concat exceptions
-filterTreeWith' True _ (File name _) = Left [CanOnlyFilterDirectory name]
-filterTreeWith' False f file@(File name fData) =
+    in
+        case includeMeE of
+            Left err -> Left [err]
+            Right includeMe ->
+                if includeMe
+                then
+                    if null exceptions
+                    then Right (Just $ Dir name contents''')
+                    else Left $ concat exceptions
+                else
+                    -- if a folder has contents, it is saved
+                    if length contents''' > 0
+                    then Right (Just $ Dir name contents''')
+                    else Right Nothing
+filterTreeWith' [] _ (File name _) = Left [CanOnlyFilterDirectory name]
+filterTreeWith' (x:xs) f file@(File name fData) =
     case f fData of
         Left err -> Left [err]
         Right result ->
@@ -113,6 +123,12 @@ filterTreeWith' False f file@(File name fData) =
                 then Right $ Just file
                 else Right Nothing
 filterTreeWith' _ _ (Failed name _) = Left [CanOnlyFilterDirectory name]
+
+-- getFDataForDir :: DirTree FData -> FData
+-- getFDataForDir (Dir name contents) =
+--     FileData name $ head
+-- getFDataForDir (Failed _ _) = error "getFDataForDir applied to Failed"
+-- getFDataForDir (File _ _) = error "getFDataForDir applied to File"
 
 parseFilterStr :: ByteString -> Either TSException (Exp L.Range)
 parseFilterStr filterStr =

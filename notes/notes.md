@@ -1,5 +1,15 @@
 2023-09-20
 ----------
+
+What's the desired behaviour? remove empty folders by default?
+Or make the user write that? Could be a command line option but don't really like that.
+How would it be written?
+It's more like that the default is to keep folders if they have files in (even if the filter doesn't include them)
+so the behaviour should be:
+- they get assessed like everything else, they don't have an in-built `FData` but one can be constructed
+- if they're not included, but files in them are included, they get kept (this is the exception)
+- otherwise like files they get cut
+
 The next challenge is to get filterTreeWith' working in a monadic way.
 Make sure the initial directory doesn't filter itself away.
 A directory with included contents cannot be filtered away(?)
