@@ -95,8 +95,14 @@ filterTreeWith' isBase f (Dir name contents) =
     let contents' = filterTreeWith' False f <$> contents :: [Either [TSException] (Maybe (DirTree FData))]
         (exceptions, contents'') = partitionEithers contents'
         contents''' = catMaybes contents''
+        -- We have a situation here: Dir has no `FData` so can't match on that
+        -- Perhaps construct an FData here?
+        -- includeMe = f contents
     in if null exceptions
-        then Right (Just $ Dir name contents''')
+        then if length contents''' == 0
+                 -- if a folder has no contents, we get rid of it by default
+                 then Right Nothing
+                 else Right (Just $ Dir name contents''')
         else Left $ concat exceptions
 filterTreeWith' True _ (File name _) = Left [CanOnlyFilterDirectory name]
 filterTreeWith' False f file@(File name fData) =
