@@ -90,30 +90,26 @@ filterTreeWith tree filterStr =
             let filtered = filterTreeWith' [] (getMatcher simplified) tree'
             in fromJust <$> filtered
 
-
 filterTreeWith' ::
     [ByteString] -> Matcher -> DirTree FData -> Either [TSException] (Maybe (DirTree FData))
 filterTreeWith' parents f (Dir name contents) =
     let fData = FileData name parents
-        includeMeE = f fData
         parents' = parents ++ [(pack name)]
         contents' = filterTreeWith' parents' f <$> contents
         (exceptions, contents'') = partitionEithers contents'
         contents''' = catMaybes contents''
     in
-        case includeMeE of
+        case f fData of
             Left err -> Left [err]
-            Right includeMe ->
-                if includeMe
-                then
-                    if null exceptions
-                    then Right (Just $ Dir name contents''')
-                    else Left $ concat exceptions
-                else
-                    -- if a folder has contents, it is saved
-                    if length contents''' > 0
-                    then Right (Just $ Dir name contents''')
-                    else Right Nothing
+            Right True ->
+                if null exceptions
+                then Right (Just $ Dir (trace ("name of accepted folder is " ++ name) name) contents''')
+                else Left $ concat exceptions
+            Right False ->
+                -- if a folder has contents, it is saved
+                if length contents''' > 0
+                then Right (Just $ Dir (trace ("name of saved folder is " ++ name) name) contents''')
+                else Right (trace ("name of rejected folder is " ++ name) Nothing)
 filterTreeWith' [] _ (File name _) = Left [CanOnlyFilterDirectory name]
 filterTreeWith' (x:xs) f file@(File name fData) =
     case f fData of
@@ -123,12 +119,6 @@ filterTreeWith' (x:xs) f file@(File name fData) =
                 then Right $ Just file
                 else Right Nothing
 filterTreeWith' _ _ (Failed name _) = Left [CanOnlyFilterDirectory name]
-
--- getFDataForDir :: DirTree FData -> FData
--- getFDataForDir (Dir name contents) =
---     FileData name $ head
--- getFDataForDir (Failed _ _) = error "getFDataForDir applied to Failed"
--- getFDataForDir (File _ _) = error "getFDataForDir applied to File"
 
 parseFilterStr :: ByteString -> Either TSException (Exp L.Range)
 parseFilterStr filterStr =

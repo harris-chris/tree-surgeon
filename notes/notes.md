@@ -1,6 +1,8 @@
 2023-09-20
 ----------
 
+Expected and actual are the wrong way around in the tests!
+
 What's the desired behaviour? remove empty folders by default?
 Or make the user write that? Could be a command line option but don't really like that.
 How would it be written?

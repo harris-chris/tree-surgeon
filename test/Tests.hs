@@ -104,10 +104,15 @@ applyTwoFiltersAndCompare dirname filtA filtB compareF =
 main :: IO ()
 main = hspec $ do
     describe "Atomic expressions" $ do
-        it "basename file == \"string\"" $ do
-            let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
+        -- it "basename file == \"string\"" $ do
+        --     let treeA' = filterDir (\dt -> (name dt) == "file_a_2.hpp" ) treeA
+        --     let expected = Dir "test-data" [ treeA' ]
+        --     let testStr = "(basename file) == \"file_a_2.hpp\""
+        --     applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "basename file == \"string\" for nested directory" $ do
+            let treeA' = filterDir (\dt -> (name dt) == "docs.md" ) treeA
             let expected = Dir "test-data" [ treeA' ]
-            let testStr = "(basename file) == \"file_a_2.hpp\""
+            let testStr = "(basename file) == \"file_a_1.cpp\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
     --     it "ancestorNameIs string" $ do
     --         let expected = Dir "test-data" [ treeA ]
