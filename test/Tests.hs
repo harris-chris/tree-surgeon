@@ -109,10 +109,20 @@ main = hspec $ do
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "(basename file) == \"file_a_2.hpp\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
-        it "basename file == \"string\" for nested directory" $ do
+        it "basename file == \"string\" for file in nested directory" $ do
             let treeA' = filterDir (\dt -> LBS.isPrefixOf "docs" (LBS.pack $ name dt)) treeA
             let expected = Dir "test-data" [ treeA' ]
             let testStr = "(basename file) == \"docs.md\""
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "basename file == \"string\" for directory" $ do
+            let treeA' = filterDir (\dt -> name dt == "docs") treeA
+            let expected = Dir "test-data" [ treeA' ]
+            let testStr = "(basename file) == \"docs\""
+            applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        it "basename file == \"string\" for directory in nested directory" $ do
+            let treeC' = Dir "c-executable" [ Dir "ext" [ ] ]
+            let expected = Dir "test-data" [ treeC' ]
+            let testStr = "(basename file) == \"ext\""
             applyFilterWith testDataPath ( compareToExpected expected ) testStr
     --     it "ancestorNameIs string" $ do
     --         let expected = Dir "test-data" [ treeA ]
