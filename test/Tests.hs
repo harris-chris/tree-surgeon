@@ -209,10 +209,10 @@ main = hspec $ do
     --         applyFilterWith testDataPath ( compareToExpected expected ) testStr
 
     -- describe "Inverting expressions" $ do
-    --     it "!exp" $ do
-    --         let expected = Dir "test-data" [ treeB , treeC ]
-    --         let testStr = "!ancestorNameIs \"a-project\""
-    --         applyFilterWith testDataPath ( compareToExpected expected ) testStr
+        -- it "!exp" $ do
+        --     let expected = Dir "test-data" [ treeB , treeC ]
+        --     let testStr = "!ancestorNameIs \"a-project\""
+        --     applyFilterWith testDataPath ( compareToExpected expected ) testStr
     --     it "!(exp | exp | exp)" $ do
     --         let treeA' = filterDir
     --                       (\dt -> (not $ LBS.isSuffixOf ".cpp" $ LBS.pack $ name dt)

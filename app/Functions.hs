@@ -31,10 +31,5 @@ basenameFunc args@(x:y:z) _ = Left $ FuncWrongNumArgs "basename" (length args) 1
 resolveFunc :: (Show a, Eq a) => FData -> String -> [Lit a] -> Either TSException (Lit a)
 resolveFunc fData name args
     | name == "basename" = basenameFunc args fData
-    | name == "==" = eqsFunc args fData
     | True = Left $ FuncNameNotRecognized name $ show <$> args
-
-eqsFunc :: (Show a, Eq a) => [Lit a] -> FData -> Either TSException (Lit a)
-eqsFunc ((LBool a x):(LBool _ y):[]) _ = Right $ LBool a $ x == y
-eqsFunc args@(x:y:z) _ = Left $ FuncWrongNumArgs "==" (length args) 2
 
