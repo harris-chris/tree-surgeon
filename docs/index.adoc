@@ -9,19 +9,31 @@ endsWith ".cpp" (basename file)
 
 Will filter out all files (on _all levels_ of the directory tree) except those ending in ".cpp". Filtering expressions are defined via a mini-language.
 
-Tree surgeon is primarily intended to be an intermediary tool, called by other applications rather than by the user directly. However, there are a few user-facing use cases, particulary when inter-operating with a shell:
+Outside of [nix](https://nixos.org/) use, tree-surgeon is mainly used when inter-operating with a shell:
 
 * Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
-[source,haskell]
-tree-surgeon tree-diff -f 'nameEndsWith ".c"' -s ./my-project
+[source,console]
+$ tree-surgeon tree-diff \
+    -f 'endsWith ".c" (basename file)' \
+    -s ./my-project
 
-* Recursively remove all `*.tmp` files in sub-directories named `.cache` from a directory, by piping tree-surgeon's output to bash:
-[source,haskell]
-tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-project | xargs rm
+* Remove all `*.tmp` files in sub-directories named `.cache` from any level of a directory, by piping tree-surgeon's output to bash:
+[source,console]
+$ tree-surgeon to-bash \
+    -f 'endsWith ".tmp" (basename file) & elem ".cache" (parents file)' \
+    -s ./my-project | xargs rm
 
-* Find and replace the string "Apple" with "Orange" in all ".cpp" or ".hpp" files:
-[source,haskell]
-tree-surgeon to-bash -f 'nameEndsWith [".cpp", ".hpp"]' -s ./my-project | xargs sed -i 's/Apple/Orange/g'
+* Find and replace the string "Apple" with "Orange" in all files with "fruit" in the name, or in the "./fruit" directory:
+[source,console]
+$ tree-surgeon to-bash \
+    -f 'occursIn "fruit" (basename file) | parents file == [ "fruit" ]' \
+    -s ./my-project | xargs sed -i 's/Apple/Orange/g'
+
+* Count the number of lines of code in all files in your project that are *not* either Haskell or Rust:
+[source,console]
+$ tree-surgeon to-bash \
+    -f 'let fName = basename file in !(endsWith ".hs" fName | endsWith ".rs" fName)' \
+    -s ./my-project | xargs wc -l
 
 === Filter expressions
 Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where `True` indicates that the file should be included.
@@ -328,7 +340,11 @@ Will include any file that is in a directory named `mySrc` (directly or indirect
 === [[why-include-not-exclude]]Why include, not exclude?
 Applying the filter `basename file == "test-file"` will _include only files named test-file_. This might be unintuitive to those used to filters excluding, such as `.gitignore`. Versus excluding, including is a much more robust way to capture what you want from a directory tree, but tends to be more verbose, as there's usually less stuff that needs excluding, than including. Tree surgeon aims to have the robustness of including files, but without this verbosity. Note that any filter can be inverted by using the `!` operator, eg `!(basename file == "test-file")`.
 
-Also, when using the `to-bash` command - eg,
+Also, when using the `to-bash` command, you can use the `-e`/`--excluded` to invert the filter; this will show all files that do *not* meet the filter; so:
 [source,console]
-$ tree-surgeon
+$ tree-surgeon to-bash \
+    -f 'endsWith ".cpp" (basename file) & elem "src" (parents file)' \
+    -s ./my-project -e | xargs rm
+
+Will remove all files that are not `*.cpp` files in the `src` directory.
 
