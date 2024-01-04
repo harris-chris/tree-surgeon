@@ -1,0 +1,334 @@
+= Tree Surgeon
+:toc: left
+:nofooter:
+
+== Introduction
+Tree surgeon is a tool for filtering file trees. A "filter expression" is used to filter a file tree:
+[source,haskell]
+endsWith ".cpp" (basename file)
+
+Will filter out all files (on _all levels_ of the directory tree) except those ending in ".cpp". Filtering expressions are defined via a mini-language.
+
+Tree surgeon is primarily intended to be an intermediary tool, called by other applications rather than by the user directly. However, there are a few user-facing use cases, particulary when inter-operating with a shell:
+
+* Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
+[source,haskell]
+tree-surgeon tree-diff -f 'nameEndsWith ".c"' -s ./my-project
+
+* Recursively remove all `*.tmp` files in sub-directories named `.cache` from a directory, by piping tree-surgeon's output to bash:
+[source,haskell]
+tree-surgeon to-bash -f 'nameEndsWith ".tmp" & ancestorNameIs ".cache"' -s ./my-project | xargs rm
+
+* Find and replace the string "Apple" with "Orange" in all ".cpp" or ".hpp" files:
+[source,haskell]
+tree-surgeon to-bash -f 'nameEndsWith [".cpp", ".hpp"]' -s ./my-project | xargs sed -i 's/Apple/Orange/g'
+
+=== Filter expressions
+Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where `True` indicates that the file should be included.
+
+Note that the term "file" is used in the Unix sense here, and may be a directory or a regular file. You can distinguish between the two in filter expressions by the `isFile` or `isDir` functions.
+
+[sidebar]
+See the xref:language_tour[language tour] for more information on constructing filter expressions
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── docs.md
+     ├─── [navy]#*mySrc*#
+     │    [silver]#└─── myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── tests.rs
+----
+
+=== How does filtering work?
+- A file or directory that has been included by the filter expression will *always* be included in the resulting tree, from which it flows that:
+- A directory will be included in the resulting tree if it contains any files that have been included, even if it was not directly included by the filter expression.
+
+An example of a very simple filter expression is:
+[source,haskell]
+basename file == "includeMe.txt"
+
+Which tells tree surgeon to include any file named `includeMe.txt`. Tree surgeon will traverse the whole of the directory tree you specify, and for all files, test whether they match this expression. So in this case, any file named `includeMe.txt`, at any depth of the directory tree, will be included; and so will any directories that (directly or indirectly) contain these files.
+
+== [[language_tour]] Language tour
+
+=== Expressions are like functions
+Tree surgeon uses a mini-language to define its filters. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where True indicates that the file should be included. The file that is being examined for inclusion/exclusion is a special pre-defined variable in the expression, called `file`.
+
+The filter language is very similar to functional languages such as Haskell and ML, with just a few alterations for convenience.
+
+xref:why_filter_both[Why does tree-surgeon filter both directories and files?]
+
+For example:
+[source,haskell]
+basename file == "myMain.rs"
+
+Tells tree surgeon to include any file named `myMain.rs`. Tree surgeon will traverse the whole of the directory tree you specify, and for each file, assess whether this expression evaluates to `True`. So in this case, any file named `myMain.rs`, at any depth of the directory tree, will be included:
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+(note that files in grey were part of the original tree, but have been excluded)
+
+=== Sub-expressions can be linked
+This expression can be composed of sub-expressions, linked via `&` (and) and `|` (or) operators. For example:
+[source,haskell]
+basename file == "docs.md" | basename file == "tests.rs"
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+Note that the filter expression is evaluated for every file in the tree, and as long as the expression resolves to `True`, then a file will be included. The special `file` variable need not actually be in the expression (though, it almost always should be). So this expression will include all files:
+[source,haskell]
+1 == 1
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+whereas this expression will include no files:
+[source,haskell]
+False
+
+=== Expressions can be defined, negated
+Expressions can be parenthesized, compared, negated (via `!`), or defined (via `let .. in ...`). Here we want to include all files except those which have "tests" in the name:
+[source,haskell]
+!(occursIn "tests" (basename file))
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+
+Multiple definitions can be put within the same `let ... in` statement, and separated by colons:
+[source,haskell]
+let isDocs = basename file == "docs.md"; isTests = basename file == "tests.rs" in isDocs | isTests
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+=== Functions on the special `file` value
+As a reminder, the `file` variable means "file" in the unix sense: it includes both directories and regular files.
+
+The `file` variable can be interacted with via a few functions:
+
+- `basename` returns the name of the file as a string. This is the name of the file only, not its directory structure; so for `myDir/mySrc/myMain.rs`, `basename file` returns `myMain.rs`.
+
+- `parents` returns the parent directories of the file as a list of strings. So for the file `myDir/mySrc/myMain.rs`, `parents file` will return `[ "myDir", "mySrc" ]`.
+
+- `isDir` and `isFile` return `True` if the `file` object is a directory or a regular file, respectively.
+
+=== String-related functions
+`startsWith`, `occursIn` and `endsWith` do what you'd imagine them to do:
+
+[source,haskell]
+endsWith ".rs" (basename file)
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [silver]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+[source,haskell]
+startsWith "docs" (basename file) | occursIn "Main" (basename file)
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+
+=== Functions can be partially applied
+Functions can be _partially applied_. Here the `endsWith` function normally takes two arguments, but we have passed it only one, creating a new `isRust` function, that expects a single additional argument:
+[source, haskell]
+let isRust = endsWith ".rs" in isRust (basename file)
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [silver]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+=== There are lists, no tuples
+Lists are defined in the usual way, with square brackets:
+[source, haskell]
+parents file == [ "myDir", "docs" ]
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+
+=== `all`, `any`, and `map` operate on lists
+
+`all` takes a function of type `a -> True` applies it to all members of a list of type `[a]`, and checks if all elements of the resulting list are `True`:
+
+[source, haskell]
+all (startsWith "my") (parents file)
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [silver]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [navy]#*mySrc*#
+     │    └─── [black]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+
+`any` is similar, but checks if any element of the resulting list is `True`:
+
+[source, haskell]
+any ((==) "tests") (parents file)
+
+Note that putting parentheses around an infix function like `==` or `+` allows it to be used prefix. Here `((==) "tests")` resolves to a (partially-applied function) that takes a single argument - a string - and returns `True` if it equals `"tests"`, otherwise `False`.
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [silver]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+`map` is used to convert elements of a list from one type to another:
+
+[source, haskell]
+any ((==) 4) (map length (parents file))
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [navy]#*docs*#
+     │    └─── [black]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [silver]#*tests*#
+          └─── [silver]#*integration_tests*#
+               └─── [silver]#tests.rs#
+----
+
+[source, haskell]
+any ((==) "tests") (parents file)
+
+Note that putting parentheses around an infix function like `==` or `+` allows it to be used prefix. Here `((==) "tests")` resolves to a (partially-applied function) that takes a single argument - a string - and returns `True` if it equals `"tests"`, otherwise `False`.
+
+[subs="quotes,attributes,macros"]
+----
+.
+└─── [navy]#*myDir*#
+     ├─── [silver]#*docs*#
+     │    └─── [silver]#docs.md#
+     ├─── [silver]#*mySrc*#
+     │    └─── [silver]#myMain.rs#
+     └─── [navy]#*tests*#
+          └─── [navy]#*integration_tests*#
+               └─── [black]#tests.rs#
+----
+
+== Occasionally Asked Questions
+
+=== [[why_filter_both]]Why filter both files and directories?
+Similar utilities to tree-surgeon will filter on files only, and will filter directories by automatically eliminating any empty directories from the resulting tree. Tree surgeon does not use this system. Directories are included/excluded by the filter expression in exactly the same way as files, with one additional rule: if a directory has been excluded, _but it contains files that have been included_, it will be included. The fact that directories are assessed by the filter expression in the same way as files means that empty directories can be included. Although in most use cases it is rare to want to include an empty directory, it is not out the question and so this situation is provided for. If you do not want empty directories to be included, appending `& !(isDir file)` to an expression will cause empty directories to be excluded; for example:
+
+[source,haskell]
+elem "mySrc" (parents file) & !(isDir file)
+
+Will include any file that is in a directory named `mySrc` (directly or indirectly), but exclude any empty directories.
+
+=== [[why-include-not-exclude]]Why include, not exclude?
+Applying the filter `basename file == "test-file"` will _include only files named test-file_. This might be unintuitive to those used to filters excluding, such as `.gitignore`. Versus excluding, including is a much more robust way to capture what you want from a directory tree, but tends to be more verbose, as there's usually less stuff that needs excluding, than including. Tree surgeon aims to have the robustness of including files, but without this verbosity. Note that any filter can be inverted by using the `!` operator, eg `!(basename file == "test-file")`.
+
+Also, when using the `to-bash` command - eg,
+[source,console]
+$ tree-surgeon
+

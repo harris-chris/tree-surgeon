@@ -1,0 +1,88 @@
+cabal-version:      3.6
+name:               tree-surgeon
+
+-- PVP summary:     +-+------- breaking API changes
+--                  | | +----- non-breaking API additions
+--                  | | | +--- code changes with no API change
+version:            0.1.0.0
+
+synopsis:           Define and run filters for directory trees
+license:            MIT
+license-file:       LICENSE
+author:             Christopher Harris
+maintainer:         chrisharriscjh@gmail.com
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+common deps
+    build-depends:    	base
+                      	, ansi-terminal
+                      	, array ^>=0.5.4.0
+                      	, bytestring ^>=0.11.4.0
+                      	, containers
+                      	, directory
+                      	, directory-tree ^>=0.12.1
+                      	, filepath ^>=1.4.2.2
+                      	, monad-logger-aeson
+                      	, mtl
+                      	, optparse-applicative ^>=0.17.0.0
+                      	, text
+                      	, text-show
+                      	, with-utf8
+    other-modules:
+                        , ASTShow
+      	                , Cli
+      	                , ExceptionFuncs
+      	                , Exceptions
+                        , FData
+                        , FunctionDefinition
+                        , Functions
+                        , InfixOperators
+                        , IsTrace
+                        , Lexer
+                        , Lit
+      	                , Output
+      	                , ParseException
+      	                , Parser
+                        , RawExp
+                        , RawExpFuncs
+      	                , Resolved
+                        , ResolvedFuncs
+      	                , ResolvedType
+                        , SimpleExp
+                        , SimpleExpFuncs
+      	                , Trace
+      	                , TreeFilter
+
+common test-deps
+    build-depends: 	HUnit
+                        , hspec
+                        , hspec-contrib
+                        , QuickCheck
+                        , fmt
+                        , optparse-applicative
+
+executable tree-surgeon
+    import:             warnings, deps
+    main-is:            Main.hs
+
+    default-extensions: OverloadedStrings
+    other-extensions:   ScopedTypeVariables
+
+    hs-source-dirs:     app
+    default-language:   GHC2021
+
+test-suite test
+    import: 		warnings, deps, test-deps
+    type: 		exitcode-stdio-1.0
+    ghc-options: 	-Wall -Wno-missing-signatures
+    hs-source-dirs: 	app
+    		    	, test
+    main-is:    	Tests.hs
+    default-extensions:	OverloadedStrings
+                        , ScopedTypeVariables
+    default-language: 	GHC2021
+
