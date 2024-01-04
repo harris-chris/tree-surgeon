@@ -4,7 +4,7 @@
 
 stdenv.mkDerivation {
   name = "tstest";
-  src = tsLib.prune ./src/test/test-data "endsWith '.cpp' (basename file)";
+  src = tsLib.prune ./. "endsWith '.cpp' (basename file)";
   dontUnpack = true;
   buildPhase = ''
     mkdir $out
