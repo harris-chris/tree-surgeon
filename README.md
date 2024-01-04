@@ -10,11 +10,13 @@ Tree surgeon is a tool for applying complex (or simple!) filters to directory tr
 ```
 $ tree-surgeon tree-diff -f 'endsWith ".md" (basename file)' -s ~/Documents
 ```
-will show a before & after of your `~/Downloads` folder, if all but the markdown (`*.md`) files were filtered out,
+will show a before & after of your `~/Downloads` folder, if all but the markdown (`*.md`) files were filtered out.
 
-then
+Then:
 ```
-$ tree-surgeon tree-diff -f 'endsWith ".md" (basename file) | elem "myProjectFiles" (parents file)' -s ~/Documents
+$ tree-surgeon tree-diff \
+    -f 'endsWith ".md" (basename file) | elem "myProjectFiles" (parents file)' \
+    -s ~/Documents
 ```
 will show the same output, _plus_ any files that are holdings (at any level) of the `myProjectFiles` folder (thanks to the `|` logical or operator).
 
@@ -31,7 +33,9 @@ $ tree-surgeon --help
 Continuing the example above, we can then generate a bash array of these files, allowing us to copy these files (and these files only) to a new directory, _maintaining the same directory structure_:
 ```
 $ cd ~/Documents
-$ FILES_TO_COPY=$(tree-surgeon to-bash -f 'endsWith ".md" (basename file) | elem "myProjectFiles" (parents file)' -s ./)
+$ FILES_TO_COPY=$(tree-surgeon to-bash \
+    -f 'endsWith ".md" (basename file) | elem "myProjectFiles" (parents file)' \
+    -s ./)
 $ cp --parents $FILES_TO_COPY /path/to/copy/destination
 ```
 
@@ -40,7 +44,7 @@ When creating nix derivations, the `src` field is hard to set correctly - if it 
 - version control files, eg the `.git` folder
 - documentation
 - the nix files themselves
-- change logs, developer's notes, and general junk like vscode config files
+- change logs, developer's notes, and general detritus like vscode config files
 
 To use `tree-surgeon` with Nix, do the following (this assumes you are using nix flakes):
 
