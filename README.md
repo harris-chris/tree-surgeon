@@ -44,7 +44,9 @@ When creating nix derivations, the `src` field is hard to set correctly - if it 
 - version control files, eg the `.git` folder
 - documentation
 - the nix files themselves
-- change logs, developer's notes, and general detritus like vscode config files
+- change logs, developer's notes
+- intermediate build artifacts
+- ... and general detritus like vscode config files
 
 To use `tree-surgeon` with Nix, do the following (this assumes you are using nix flakes):
 
