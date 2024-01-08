@@ -1,0 +1,9 @@
+**/dist-newstyle/*
+*.info
+**/test/tree-surgeon
+test_script*
+docs_test/*
+test/*-temp
+result/*
+**/result/*
+notes/*
