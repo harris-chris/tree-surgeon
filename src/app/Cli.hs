@@ -20,6 +20,8 @@ data CliOptions
         , tbaExclude :: Bool
         , tbaOptTypeConstraint :: Maybe TypeConstraint
         , tbaPathsType :: PathsType }
+    | ToGitExclude
+        { tgeFilter :: Either String String }
 
 data PathsType = RelToSource | Absolute
 
@@ -37,6 +39,9 @@ cliOptsParser =
         <> command
              "to-bash"
              (info toBash (progDesc toBashDesc))
+        <> command
+             "to-gitignore"
+             (info toGitExclude (progDesc toGitExcludeDesc))
         )
     where
         showDesc = "Show standard tree output for a directory tree after filtering it "
@@ -44,6 +49,8 @@ cliOptsParser =
         showDiffDesc = "Show the before and after diff of a directory tree that has been "
             <> "filtered with a filter expression"
         toBashDesc = "Filter a tree and print the resulting output as a bash array"
+        toGitExcludeDesc = "Convert a tree-surgeon expression to a git exlusion pattern, for "
+            <> "use in, eg, a .gitignore file"
 
 showFilteredTree :: Parser CliOptions
 showFilteredTree = ShowFilteredTree <$> filterStrArg <*> sourceDirArg
@@ -58,6 +65,10 @@ toBash = ToBashArray
             <*> excludedArg
             <*> optTypeConstraintArg
             <*> pathsArg
+
+toGitExclude :: Parser CliOptions
+toGitExclude = ToGitExclude
+            <$> filterStrArg
 
 excludedArg :: Parser Bool
 excludedArg = switch

@@ -11,8 +11,9 @@ import System.FilePath (joinPath)
 
 import Cli
 import FData
-import TreeFilter
 import Output
+import ToGitExclude
+import TreeFilter
 
 import Debug.Trace
 
@@ -81,4 +82,9 @@ tsFilter (ToBashArray fltr source True typeConstraint pathsType) =
     in case fltr of
         Left filterStr -> f (LBS.pack filterStr)
         Right file -> applyFuncWithFile file f
-
+tsFilter (ToGitExclude fltr) =
+    let resolved = simpleExpToResolved functions
+    let f = putStrLn $ toGitExclude fltr
+    in case fltr of
+        Left filterStr -> f (LBS.pack filterStr)
+        Right file -> applyFuncWithFile file f
