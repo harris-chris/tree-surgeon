@@ -9,8 +9,6 @@ endsWith ".cpp" (basename file)
 
 Will filter out all files (on _all levels_ of the directory tree) except those ending in ".cpp". Filtering expressions are defined via a mini-language.
 
-Outside of [nix](https://nixos.org/) use, tree-surgeon is mainly used when inter-operating with a shell:
-
 * Show a `tree`-style diff to illustrate what happens when applying a filter to a directory:
 [source,console]
 $ tree-surgeon tree-diff \
@@ -38,7 +36,7 @@ $ tree-surgeon to-bash \
 === Filter expressions
 Tree surgeon uses a mini-language to define its filters, that can then be applied to directory trees. A filter expression can be thought of as a function that takes a single argument - the file that is being examined for inclusion/exclusion - and returns a boolean value, where `True` indicates that the file should be included.
 
-Note that the term "file" is used in the Unix sense here, and may be a directory or a regular file. You can distinguish between the two in filter expressions by the `isFile` or `isDir` functions.
+Note that the term "file" is used in the unix sense here, and may be a directory or a regular file. You can distinguish between the two in filter expressions by the `isFile` or `isDir` functions.
 
 [sidebar]
 See the xref:language_tour[language tour] for more information on constructing filter expressions

@@ -5,5 +5,5 @@ test_script*
 docs_test/*
 test/*-temp
 result/*
-**/result/
+**/result/*
 notes/*

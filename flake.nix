@@ -3,6 +3,7 @@
     nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
     flake-utils.url = github:numtide/flake-utils;
   };
+  nixConfig.sandbox = "relaxed";
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
@@ -16,8 +17,6 @@
           inherit system;
           overlays = [ overlay ];
         };
-        tsLib = with pkgs; import ./nix/lib.nix { inherit stdenv callPackage treeSurgeon; };
-        tsTest = pkgs.callPackage ./tree-surgeon-test.nix { inherit tsLib; };
         createDocumentationLocally = pkgs.writeShellApplication {
           name = "create_documentation_locally";
           runtimeInputs = with pkgs; [ asciidoctor plantuml ];
@@ -69,11 +68,9 @@
           ];
           shellHook = "command -v fish &> /dev/null && fish";
         };
-        lib = tsLib;
         packages = {
           tree-surgeon = treeSurgeon;
           default = treeSurgeon;
-          inherit tsTest;
         };
       }
     );
